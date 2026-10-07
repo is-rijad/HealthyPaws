@@ -1,0 +1,14 @@
+﻿using HealhtyPaws.Models.BaseModels;
+
+namespace HealthyPaws.Services.BaseServices;
+
+public interface
+    IBaseCrudService<TInsertRequest, TUpdateRequest, TResponse, TSearchObject> : IBaseService<
+    TResponse, TSearchObject> where TInsertRequest : class
+    where TUpdateRequest : class
+    where TResponse : class
+    where TSearchObject : BaseSearchObject {
+    public Task<TResponse> InsertAsync(TInsertRequest request);
+    public Task<TResponse> UpdateAsync(int id, TUpdateRequest request);
+    public Task DeleteAsync(int id);
+}

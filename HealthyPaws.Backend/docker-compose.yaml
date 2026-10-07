@@ -1,0 +1,28 @@
+services:
+  healthy-paws-db:
+    image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
+    restart: unless-stopped
+    container_name: healthy-paws-db
+    env_file:
+      - ./HealthyPaws.WebApi/.env
+    ports:
+      - "1434:1433"
+    expose:
+      - 1433
+    volumes:
+      - database_data:/var/lib/database
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P $$MSSQL_SA_PASSWORD -Q 'SELECT 1' -No" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - healthy-paws
+
+volumes:
+  database_data:
+
+networks:
+  healthy-paws:
+    driver: bridge

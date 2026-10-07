@@ -1,0 +1,27 @@
+import 'package:flutter/material.dart';
+import 'package:healthy_paws/common/enums/profile_dropdown_action.dart';
+
+class UiProvider {
+  final ValueNotifier<bool> isLoading = ValueNotifier(false);
+  bool _loadingDisabled = false;
+  ProfileDropdownAction? profileDropdownAction;
+
+  void disableLoading() {
+    _loadingDisabled = true;
+  }
+
+  void startLoading() {
+    if (!_loadingDisabled) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => isLoading.value = true,
+      );
+    }
+    _loadingDisabled = false;
+  }
+
+  void stopLoading() {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => isLoading.value = false,
+    );
+  }
+}

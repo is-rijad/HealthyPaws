@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="docker-compose.yaml" />
+  </Folder>
+  <Project Path="HealhtyPaws.Models/HealhtyPaws.Models.csproj" Id="73daef12-2d26-40c4-bc67-7df065b0cf35" />
+  <Project Path="HealthyPaws.Database/HealthyPaws.Database.csproj" Id="698a81fc-de63-4755-ad59-bd7927be22c4" />
+  <Project Path="HealthyPaws.Services/HealthyPaws.Services.csproj" Id="0fb98bfc-8881-4198-a608-bb617441d4e8" />
+  <Project Path="HealthyPaws.WebApi/HealthyPaws.WebApi.csproj" />
+</Solution>
