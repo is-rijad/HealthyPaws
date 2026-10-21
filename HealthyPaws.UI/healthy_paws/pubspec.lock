@@ -722,6 +722,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.3"
+  wizard_stepper:
+    dependency: "direct main"
+    description:
+      name: wizard_stepper
+      sha256: e428242b66ad68c3841775c90349f3ee12b08a39dfb36c38cb84be4928292f0f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.10"
   xdg_directories:
     dependency: transitive
     description:

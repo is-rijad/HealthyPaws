@@ -5,6 +5,7 @@ import 'package:healthy_paws/common/enums/profile_dropdown_action.dart';
 import 'package:healthy_paws/common/providers/ui_provider.dart';
 import 'package:healthy_paws/common/resources/access_token_payload.dart';
 import 'package:healthy_paws/pages/login_page.dart';
+import 'package:healthy_paws/pages/my_profile_page.dart';
 import 'package:healthy_paws/providers/auth_provider.dart';
 import 'package:healthy_paws/widgets/profile_dropdown/profile_dropdown_item.dart';
 import 'package:material_ui/material_ui.dart';
@@ -43,7 +44,7 @@ class _PageWrapperState extends State<PageWrapper> {
           appBar: _buildAppBar(context),
           body: Padding(
             padding: const EdgeInsets.all(12.0),
-            child: SingleChildScrollView(child: widget.body),
+            child: widget.body,
           ),
           key: _scaffoldKey,
         ),
@@ -106,6 +107,10 @@ class _PageWrapperState extends State<PageWrapper> {
       ),
       items: [
         ProfileDropdownItem(
+          text: "Moj profil",
+          value: ProfileDropdownAction.myProfile,
+        ),
+        ProfileDropdownItem(
           text: "Odjava",
           value: ProfileDropdownAction.logout,
         ),
@@ -114,6 +119,13 @@ class _PageWrapperState extends State<PageWrapper> {
     _isShowingDropdown = false;
 
     switch (_uiProvider.profileDropdownAction) {
+      case ProfileDropdownAction.myProfile:
+        setState(() {
+          _uiProvider.profileDropdownAction = ProfileDropdownAction.myProfile;
+        });
+        await Constants.navigatorKey.currentState?.push(
+          MaterialPageRoute(builder: (context) => MyProfilePage()),
+        );
       case ProfileDropdownAction.logout:
         _uiProvider.startLoading();
         setState(() {

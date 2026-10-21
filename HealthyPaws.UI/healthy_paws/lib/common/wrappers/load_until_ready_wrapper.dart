@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:dio/dio.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:healthy_paws/common/build_context_extensions.dart';
 

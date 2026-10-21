@@ -9,12 +9,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthyPaws.WebApi.Controllers;
 
-public class UsersController(IUserService service) : BaseCrudController<UserInsertRequest, UserInsertRequest, UserResponse, BaseSearchObject, IUserService>(service)
+public class UsersController(IUserService service) : BaseCrudController<UserInsertRequest, UserUpdateRequest, UserResponse, BaseSearchObject, IUserService>(service)
 {
     [AllowAnonymous]
     [HttpPost]
     public override async Task<IActionResult> Insert(UserInsertRequest request)
     {
         return await base.Insert(request);
+    }
+
+    [HttpGet("{id}")]
+    public override async Task<IActionResult> GetById(int id)
+    {
+        return await base.GetById(id);
+    }
+    [HttpPut("{id}")]
+    public override async Task<IActionResult> Update(int id, UserUpdateRequest request)
+    {
+        return await base.Update(id, request);
     }
 }

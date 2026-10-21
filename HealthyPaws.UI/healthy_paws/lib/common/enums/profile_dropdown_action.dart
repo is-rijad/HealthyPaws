@@ -1,1 +1,1 @@
-enum ProfileDropdownAction { logout }
+enum ProfileDropdownAction { myProfile, logout }

@@ -1,15 +1,16 @@
+using DotNetEnv;
 using HealthyPaws.Database;
+using HealthyPaws.Services;
 using HealthyPaws.Services.Authorization;
+using HealthyPaws.Services.Mapster;
 using HealthyPaws.WebApi.Filters;
 using Mapster;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Text.Json.Serialization;
-using DotNetEnv;
-using HealthyPaws.Services;
-using Microsoft.Extensions.Configuration;
 
 Env.Load("./.env");
 
@@ -33,6 +34,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddDatabase(Environment.GetEnvironmentVariable("ConnectionStrings__Default") ?? throw new ArgumentException("ConnectionStrings__Default is not defined"));
 //await builder.Services.MigrateDatabaseAsync();
 
+TypeAdapterConfig.GlobalSettings.Default.IgnoreNullValues(true);
+TypeAdapterConfig.GlobalSettings.Scan(typeof(MapsterConfiguration).Assembly);
 builder.Services.AddMapster();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLogging();

@@ -1,4 +1,5 @@
 ﻿using HealhtyPaws.Models.Responses.Dog;
+using HealhtyPaws.Models.Responses.DogWeight;
 
 namespace HealhtyPaws.Models.Responses.Device;
 
@@ -9,5 +10,6 @@ public class DeviceResponse
     public decimal CurrentWeight { get; set; }
     public bool IsConnected { get; set; }
     public DogResponse? Dog { get; set; }
+    public DogWeightResponse? LastWeightRecord { get; set; }
 
 }

@@ -17,7 +17,5 @@ public record DogInsertRequest(
     [Required]
     float ActivityStatus,
     [Required]
-    short Bcs,
-    [Required]
     bool IsNeutered
     );

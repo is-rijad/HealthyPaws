@@ -13,8 +13,10 @@ DogResponse _$DogResponseFromJson(Map<String, dynamic> json) => DogResponse(
   dateOfBirth: DateTime.parse(json['dateOfBirth'] as String),
   gender: $enumDecode(_$DogGenderEnumMap, json['gender']),
   activityStatus: (json['activityStatus'] as num).toDouble(),
-  bcs: (json['bcs'] as num).toInt(),
   isNeutered: json['isNeutered'] as bool,
+  breed: json['breed'] == null
+      ? null
+      : BreedResponse.fromJson(json['breed'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$DogResponseToJson(DogResponse instance) =>
@@ -25,8 +27,8 @@ Map<String, dynamic> _$DogResponseToJson(DogResponse instance) =>
       'dateOfBirth': instance.dateOfBirth.toIso8601String(),
       'gender': _$DogGenderEnumMap[instance.gender]!,
       'activityStatus': instance.activityStatus,
-      'bcs': instance.bcs,
       'isNeutered': instance.isNeutered,
+      'breed': instance.breed,
     };
 
 const _$DogGenderEnumMap = {DogGender.male: 0, DogGender.female: 1};

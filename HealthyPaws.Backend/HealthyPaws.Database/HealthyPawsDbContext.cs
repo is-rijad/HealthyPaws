@@ -9,9 +9,10 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
     public virtual DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
     public virtual DbSet<ResetPasswordToken> ResetPasswordTokens { get; set; } = null!;
     public virtual DbSet<Dog> Dogs { get; set; } = null!;
-    public virtual DbSet<UserDog> UserDogs { get; set; } = null!;
+    public virtual DbSet<UserDevice> UserDevices { get; set; } = null!;
     public virtual DbSet<Breed> Breeds { get; set; } = null!;
     public virtual DbSet<Device> Devices { get; set; } = null!;
+    public virtual DbSet<DogWeight> DogWeights { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,9 +22,10 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
         modelBuilder.ApplyConfiguration(new ResetPasswordTokenEntityConfiguration());
 
         modelBuilder.ApplyConfiguration(new DogEntityConfiguration());
-        modelBuilder.ApplyConfiguration(new UserDogEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new UserDeviceEntityConfiguration());
         modelBuilder.ApplyConfiguration(new BreedEntityConfiguration());
 
         modelBuilder.ApplyConfiguration(new DeviceEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DogWeightEntityConfiguration());
     }
 }

@@ -12,7 +12,6 @@ class DogInsertRequest extends JsonRequest {
   DateTime dateOfBirth;
   DogGender gender;
   double activityStatus;
-  int bcs;
   bool isNeutered;
   DogInsertRequest({
     required this.breedId,
@@ -20,7 +19,6 @@ class DogInsertRequest extends JsonRequest {
     required this.dateOfBirth,
     required this.gender,
     required this.activityStatus,
-    required this.bcs,
     required this.isNeutered,
   });
 

@@ -5,7 +5,9 @@ using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.BaseServices;
+using HealthyPaws.Services.Exceptions;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.Dog;
 
@@ -18,7 +20,22 @@ public class DogService(HealthyPawsDbContext dbContext, IMapper mapper, Authoriz
         {
             queryable = queryable.Where(d => d.Name.Contains(searchObject.Contains, StringComparison.InvariantCultureIgnoreCase));
         }
-        return queryable;
+        var userId = authorizationService.GetUserId();
+        return queryable.Where(d => dbContext.UserDevices.Any(ud => ud.UserId == userId && ud.Device!.DogId == d.Id));
+    }
+
+    protected override async Task BeforeUpdate(int id, DogInsertRequest request, Database.Entity.Dog entity)
+    {
+        await base.BeforeUpdate(id, request, entity);
+        var userId = authorizationService.GetUserId();
+        if (!await dbContext.UserDevices.AnyAsync(ud => ud.UserId == userId && ud.Device!.DogId == id))
+            throw new NotFoundException("Nije pronađeno!");
+    }
+
+    protected override async Task PrepareForResponse(Database.Entity.Dog entity, HealthyPawsDbContext dbContext)
+    {
+        await base.PrepareForResponse(entity, dbContext);
+        await dbContext.Entry(entity).Reference(d => d.Breed).LoadAsync();
     }
 
     protected override IQueryable<Database.Entity.Dog> ApplyOrdering(IQueryable<Database.Entity.Dog> queryable, DogSearchObject searchObject)

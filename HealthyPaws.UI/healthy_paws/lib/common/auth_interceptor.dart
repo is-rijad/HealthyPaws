@@ -24,7 +24,10 @@ class AuthInterceptor extends Interceptor {
 
         final response = await DioClient.dio.fetch(request);
         return handler.resolve(response);
-      } catch (_) {}
+      } on DioException catch (e) {
+        handler.reject(e);
+        return;
+      }
     }
     handler.reject(err);
   }

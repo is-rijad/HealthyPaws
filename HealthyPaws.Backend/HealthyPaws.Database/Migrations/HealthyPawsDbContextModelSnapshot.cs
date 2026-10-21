@@ -1997,9 +1997,6 @@ namespace HealthyPaws.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("CurrentWeight")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("DogId")
                         .HasColumnType("int");
 
@@ -2008,9 +2005,15 @@ namespace HealthyPaws.Database.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("MacAddress")
+                        .IsRequired()
+                        .HasMaxLength(17)
+                        .HasColumnType("nvarchar(17)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("DogId");
+                    b.HasIndex("DogId", "MacAddress")
+                        .IsUnique();
 
                     b.ToTable("Devices");
                 });
@@ -2025,9 +2028,6 @@ namespace HealthyPaws.Database.Migrations
 
                     b.Property<float>("ActivityStatus")
                         .HasColumnType("real");
-
-                    b.Property<short>("Bcs")
-                        .HasColumnType("smallint");
 
                     b.Property<int>("BreedId")
                         .HasColumnType("int");
@@ -2048,11 +2048,46 @@ namespace HealthyPaws.Database.Migrations
                         .HasColumnType("nvarchar(16)")
                         .UseCollation("Croatian_CI_AS");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BreedId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Dogs");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.DogWeight", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Bcs")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Calorie")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("Weight")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DogId");
+
+                    b.ToTable("DogWeights");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.RefreshToken", b =>
@@ -2150,7 +2185,7 @@ namespace HealthyPaws.Database.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("HealthyPaws.Database.Entity.UserDog", b =>
+            modelBuilder.Entity("HealthyPaws.Database.Entity.UserDevice", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -2158,7 +2193,7 @@ namespace HealthyPaws.Database.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("DogId")
+                    b.Property<int>("DeviceId")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -2166,17 +2201,17 @@ namespace HealthyPaws.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DogId");
+                    b.HasIndex("DeviceId");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDogs");
+                    b.ToTable("UserDevices");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.Device", b =>
                 {
                     b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
-                        .WithMany("Devices")
+                        .WithMany()
                         .HasForeignKey("DogId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2192,7 +2227,22 @@ namespace HealthyPaws.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("HealthyPaws.Database.Entity.User", null)
+                        .WithMany("Dogs")
+                        .HasForeignKey("UserId");
+
                     b.Navigation("Breed");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.DogWeight", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                        .WithMany("DogWeights")
+                        .HasForeignKey("DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Dog");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.RefreshToken", b =>
@@ -2217,11 +2267,11 @@ namespace HealthyPaws.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("HealthyPaws.Database.Entity.UserDog", b =>
+            modelBuilder.Entity("HealthyPaws.Database.Entity.UserDevice", b =>
                 {
-                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                    b.HasOne("HealthyPaws.Database.Entity.Device", "Device")
                         .WithMany()
-                        .HasForeignKey("DogId")
+                        .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2231,7 +2281,7 @@ namespace HealthyPaws.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Dog");
+                    b.Navigation("Device");
 
                     b.Navigation("User");
                 });
@@ -2243,7 +2293,12 @@ namespace HealthyPaws.Database.Migrations
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.Dog", b =>
                 {
-                    b.Navigation("Devices");
+                    b.Navigation("DogWeights");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.User", b =>
+                {
+                    b.Navigation("Dogs");
                 });
 #pragma warning restore 612, 618
         }

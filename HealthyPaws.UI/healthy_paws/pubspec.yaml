@@ -46,6 +46,7 @@ dependencies:
   shared_preferences: ^2.5.5
   dio: ^5.11.1
   jwt_decoder: ^2.0.1
+  wizard_stepper: ^0.0.10
 
   material_ui: any
 dev_dependencies:

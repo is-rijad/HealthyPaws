@@ -11,12 +11,10 @@ public class Dog
     public DateTime DateOfBirth { get; set; }
     public short Gender { get; set; }
     public float ActivityStatus { get; set; }
-    public short Bcs { get; set; }
     public bool IsNeutered { get; set; }
 
     public Breed? Breed { get; set; }
-    public ICollection<User>? Users { get; set; }
-    public ICollection<Device>? Devices { get; set; }
+    public ICollection<DogWeight>? DogWeights { get; set; }
 }
 
 
@@ -28,10 +26,8 @@ public class DogEntityConfiguration : IEntityTypeConfiguration<Dog> {
         builder.Property(u => u.Gender).IsRequired();
         builder.Property(u => u.ActivityStatus).IsRequired();
         builder.Property(u => u.IsNeutered).IsRequired();
-        builder.Property(u => u.Bcs).IsRequired();
 
         builder.HasOne(u => u.Breed).WithMany(b => b.Dogs).HasForeignKey(d => d.BreedId);
-        builder.HasMany(u => u.Users).WithMany(u => u.Dogs).UsingEntity<UserDog>();
 
     }
 }

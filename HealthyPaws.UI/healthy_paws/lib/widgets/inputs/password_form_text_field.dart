@@ -7,6 +7,7 @@ class PasswordFormTextField extends StatefulWidget {
   final String name;
   final InputDecoration? decoration;
   final bool isDetailedMessage;
+  final TextEditingController? controller;
 
   const PasswordFormTextField({
     super.key,
@@ -14,6 +15,7 @@ class PasswordFormTextField extends StatefulWidget {
     required this.name,
     this.decoration,
     this.isDetailedMessage = false,
+    this.controller,
   });
 
   @override
@@ -30,6 +32,7 @@ class _PasswordFormTextFieldState extends State<PasswordFormTextField> {
           child: FormBuilderTextField(
             name: widget.name,
             obscureText: isObscure,
+            controller: widget.controller,
             decoration: widget.decoration ?? const InputDecoration(),
             validator: FormBuilderValidators.conditional(
               (_) => widget.isRequired,

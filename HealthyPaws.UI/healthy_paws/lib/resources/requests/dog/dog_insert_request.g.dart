@@ -13,7 +13,6 @@ DogInsertRequest _$DogInsertRequestFromJson(Map<String, dynamic> json) =>
       dateOfBirth: DateTime.parse(json['dateOfBirth'] as String),
       gender: $enumDecode(_$DogGenderEnumMap, json['gender']),
       activityStatus: (json['activityStatus'] as num).toDouble(),
-      bcs: (json['bcs'] as num).toInt(),
       isNeutered: json['isNeutered'] as bool,
     );
 
@@ -24,7 +23,6 @@ Map<String, dynamic> _$DogInsertRequestToJson(DogInsertRequest instance) =>
       'dateOfBirth': instance.dateOfBirth.toIso8601String(),
       'gender': _$DogGenderEnumMap[instance.gender]!,
       'activityStatus': instance.activityStatus,
-      'bcs': instance.bcs,
       'isNeutered': instance.isNeutered,
     };
 

@@ -17,7 +17,6 @@ class PaginatedDropdownField<
     required this.name,
     required this.searchObject,
     required this.itemAsString,
-    required this.compareFn,
     this.label,
     this.hint,
     this.validator,
@@ -32,7 +31,7 @@ class PaginatedDropdownField<
 
   final String name;
   final String Function(T item) itemAsString;
-  final bool Function(T a, T b) compareFn;
+  bool compareFn(T a, T b) => a.id == b.id;
   final TSearchObject searchObject;
 
   final String? label;
