@@ -11,12 +11,14 @@ class DeviceResponse extends JsonResponse {
   @override
   int id;
   int dogId;
+  String macAddress;
   bool isConnected;
   DogResponse? dog;
   DogWeightResponse? lastWeightRecord;
   DeviceResponse({
     required this.id,
     required this.dogId,
+    required this.macAddress,
     required this.isConnected,
     this.dog,
     this.lastWeightRecord,

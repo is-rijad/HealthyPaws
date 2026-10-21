@@ -1,6 +1,7 @@
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:healthy_paws/common/constants.dart';
+import 'package:healthy_paws/pages/treat/treat_form.dart';
 import 'package:healthy_paws/providers/treat_logs_provider.dart';
 import 'package:healthy_paws/providers/treats_provider.dart';
 import 'package:healthy_paws/resources/requests/treat_log/treat_log_insert_request.dart';
@@ -38,20 +39,37 @@ class _TreatLogFormState extends State<TreatLogForm> {
               child: Column(
                 spacing: 12,
                 children: [
-                  PaginatedDropdownField<
-                    TreatResponse,
-                    TreatSearchObject,
-                    TreatsProvider
-                  >(
-                    label: "Poslastica",
-                    name: "treatId",
-                    searchObject: TreatSearchObject(page: 1, pageSize: 10),
-                    itemAsString: (item) =>
-                        "${item.name} (${item.caloriesPerPiece} kcal)",
-                    validator: FormBuilderValidators.required(
-                      errorText: "Poslastica je obavezna!",
-                    ),
-                    valueTransformer: (i) => i?.id,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 8,
+                    children: [
+                      Expanded(
+                        child:
+                            PaginatedDropdownField<
+                              TreatResponse,
+                              TreatSearchObject,
+                              TreatsProvider
+                            >(
+                              label: "Poslastica",
+                              name: "treatId",
+                              searchObject: TreatSearchObject(
+                                page: 1,
+                                pageSize: 10,
+                              ),
+                              itemAsString: (item) =>
+                                  "${item.name} (${item.caloriesPerPiece} kcal)",
+                              validator: FormBuilderValidators.required(
+                                errorText: "Poslastica je obavezna!",
+                              ),
+                              valueTransformer: (i) => i?.id,
+                            ),
+                      ),
+                      IconButton.filled(
+                        tooltip: "Nova poslastica",
+                        onPressed: _addTreat,
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
                   ),
                   FormBuilderTextField(
                     name: "quantity",
@@ -108,6 +126,16 @@ class _TreatLogFormState extends State<TreatLogForm> {
         ),
       ),
     );
+  }
+
+  Future<void> _addTreat() async {
+    final created = await Constants.navigatorKey.currentState
+        ?.push<TreatResponse>(
+          MaterialPageRoute(builder: (_) => const TreatForm()),
+        );
+    if (created != null) {
+      _formKey.currentState?.fields["treatId"]?.didChange(created);
+    }
   }
 
   Future<void> _save() async {

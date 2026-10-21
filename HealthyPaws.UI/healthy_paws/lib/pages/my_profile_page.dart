@@ -1,9 +1,11 @@
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:get_it/get_it.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:healthy_paws/common/components/snackbars/success_snackbar.dart';
 import 'package:healthy_paws/common/constants.dart';
+import 'package:healthy_paws/common/providers/ui_provider.dart';
+import 'package:healthy_paws/pages/login_page.dart';
 import 'package:healthy_paws/common/wrappers/load_until_ready_wrapper.dart';
-import 'package:healthy_paws/pages/device/device_form.dart';
 import 'package:healthy_paws/providers/auth_provider.dart';
 import 'package:healthy_paws/providers/users_provider.dart';
 import 'package:healthy_paws/resources/requests/user/user_update_request.dart';
@@ -45,105 +47,124 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   Widget _build(BuildContext context) {
     return PageWrapper(
+      showAppBar: false,
       appBarTitle: "Moj profil",
-      body: FormBuilder(
-        key: _formKey,
-        initialValue: _initialValue,
-        child: Column(
-          spacing: 12,
-          children: [
-            FormBuilderTextField(
-              name: "firstName",
-              decoration: InputDecoration(labelText: "Ime"),
-              validator: FormBuilderValidators.compose([
-                FormBuilderValidators.required(errorText: "Ime je obavezno!"),
-                FormBuilderValidators.minLength(
-                  1,
-                  errorText: "Ime nije validno!",
-                ),
-                FormBuilderValidators.maxLength(
-                  32,
-                  errorText: "Ime nije validno!",
-                ),
-              ]),
-            ),
-            FormBuilderTextField(
-              name: "lastName",
-              decoration: InputDecoration(labelText: "Prezime"),
-              validator: FormBuilderValidators.compose([
-                FormBuilderValidators.required(
-                  errorText: "Prezime je obavezno!",
-                ),
-                FormBuilderValidators.minLength(
-                  1,
-                  errorText: "Prezime nije validno!",
-                ),
-                FormBuilderValidators.maxLength(
-                  64,
-                  errorText: "Prezime nije validno!",
-                ),
-              ]),
-            ),
-            FormBuilderTextField(
-              name: "email",
-              decoration: InputDecoration(labelText: "Email"),
-              validator: FormBuilderValidators.compose([
-                FormBuilderValidators.required(errorText: "Email je obavezan!"),
-                FormBuilderValidators.email(errorText: "Email nije validan!"),
-              ]),
-            ),
-            FormBuilderCheckbox(
-              initialValue: false,
-              onChanged: (value) => setState(() {
-                _changePassword = value ?? false;
-              }),
-              name: "changePassword",
-              title: const Text("Izmjena lozinke?"),
-            ),
-            if (_changePassword)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Column(
-                  children: [
-                    PasswordFormTextField(
-                      controller: oldPasswordController,
-                      isRequired: true,
-                      name: "oldPassword",
-                      decoration: InputDecoration(labelText: "Stara lozinka"),
-                    ),
-                    PasswordFormTextField(
-                      controller: passwordController,
-                      isDetailedMessage: true,
-                      isRequired: true,
-                      name: "password",
-                      decoration: InputDecoration(labelText: "Lozinka"),
-                    ),
-                    PasswordFormTextField(
-                      controller: passwordAgainController,
-                      isRequired: true,
-                      name: "passwordAgain",
-                      decoration: InputDecoration(labelText: "Potvrda lozinke"),
-                    ),
-                  ],
-                ),
+      body: SingleChildScrollView(
+        child: FormBuilder(
+          key: _formKey,
+          initialValue: _initialValue,
+          child: Column(
+            spacing: 12,
+            children: [
+              FormBuilderTextField(
+                name: "firstName",
+                decoration: InputDecoration(labelText: "Ime"),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(errorText: "Ime je obavezno!"),
+                  FormBuilderValidators.minLength(
+                    1,
+                    errorText: "Ime nije validno!",
+                  ),
+                  FormBuilderValidators.maxLength(
+                    32,
+                    errorText: "Ime nije validno!",
+                  ),
+                ]),
               ),
+              FormBuilderTextField(
+                name: "lastName",
+                decoration: InputDecoration(labelText: "Prezime"),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: "Prezime je obavezno!",
+                  ),
+                  FormBuilderValidators.minLength(
+                    1,
+                    errorText: "Prezime nije validno!",
+                  ),
+                  FormBuilderValidators.maxLength(
+                    64,
+                    errorText: "Prezime nije validno!",
+                  ),
+                ]),
+              ),
+              FormBuilderTextField(
+                name: "email",
+                decoration: InputDecoration(labelText: "Email"),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: "Email je obavezan!",
+                  ),
+                  FormBuilderValidators.email(errorText: "Email nije validan!"),
+                ]),
+              ),
+              FormBuilderCheckbox(
+                initialValue: false,
+                onChanged: (value) => setState(() {
+                  _changePassword = value ?? false;
+                }),
+                name: "changePassword",
+                title: const Text("Izmjena lozinke?"),
+              ),
+              if (_changePassword)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(
+                    children: [
+                      PasswordFormTextField(
+                        controller: oldPasswordController,
+                        isRequired: true,
+                        name: "oldPassword",
+                        decoration: InputDecoration(labelText: "Stara lozinka"),
+                      ),
+                      PasswordFormTextField(
+                        controller: passwordController,
+                        isDetailedMessage: true,
+                        isRequired: true,
+                        name: "password",
+                        decoration: InputDecoration(labelText: "Lozinka"),
+                      ),
+                      PasswordFormTextField(
+                        controller: passwordAgainController,
+                        isRequired: true,
+                        name: "passwordAgain",
+                        decoration: InputDecoration(
+                          labelText: "Potvrda lozinke",
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                ElevatedButton(
-                  onPressed: () => Constants.navigatorKey.currentState?.pop(),
-                  child: const Text("Otkaži"),
-                ),
-                PrimaryButton(
-                  text: "Spremi",
-                  onPressed: () async => await _save(),
-                ),
-              ],
-            ),
-          ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  OutlinedButton(
+                    onPressed: _logout,
+                    child: const Text("Odjava"),
+                  ),
+                  PrimaryButton(
+                    text: "Spremi",
+                    onPressed: () async => await _save(),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Future<void> _logout() async {
+    final uiProvider = GetIt.I<UiProvider>();
+    uiProvider.startLoading();
+    await context.read<AuthProvider>().logout();
+    if (!mounted) return;
+    uiProvider.stopLoading();
+    await Constants.navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false,
     );
   }
 

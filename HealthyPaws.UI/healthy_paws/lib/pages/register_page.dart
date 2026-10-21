@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:healthy_paws/common/constants.dart';
-import 'package:healthy_paws/pages/home_page.dart';
+import 'package:healthy_paws/pages/main_shell.dart';
 import 'package:healthy_paws/providers/users_provider.dart';
 import 'package:healthy_paws/resources/requests/auth/login_request.dart';
 import 'package:healthy_paws/resources/requests/user/user_insert_request.dart';
@@ -115,7 +115,7 @@ class _RegisterPageState extends State<RegisterPage> {
       );
       if (!mounted) return;
       await Constants.navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (builder) => HomePage()),
+        MaterialPageRoute(builder: (builder) => MainShell()),
         (_) => false,
       );
     }

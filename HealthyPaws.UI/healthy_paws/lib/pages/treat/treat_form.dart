@@ -81,8 +81,7 @@ class _TreatFormState extends State<TreatForm> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ElevatedButton(
-                  onPressed: () =>
-                      Constants.navigatorKey.currentState?.pop(false),
+                  onPressed: () => Constants.navigatorKey.currentState?.pop(),
                   child: const Text("Otkaži"),
                 ),
                 PrimaryButton(text: "Spremi", onPressed: _save),
@@ -99,11 +98,9 @@ class _TreatFormState extends State<TreatForm> {
     final request = TreatInsertRequest.fromJson(_formKey.currentState!.value);
     final provider = context.read<TreatsProvider>();
     final treat = widget.treat;
-    if (treat == null) {
-      await provider.insert(request);
-    } else {
-      await provider.update(treat.id, request);
-    }
+    final TreatResponse? saved = treat == null
+        ? await provider.insert(request)
+        : await provider.update(treat.id, request);
     Constants.messengerKey.currentState?.showSnackBar(
       SuccessSnackbar(
         message: treat == null
@@ -111,6 +108,6 @@ class _TreatFormState extends State<TreatForm> {
             : "Uspješno ste uredili poslasticu!",
       ),
     );
-    Constants.navigatorKey.currentState?.pop(true);
+    Constants.navigatorKey.currentState?.pop(saved);
   }
 }

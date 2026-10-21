@@ -68,7 +68,7 @@ class _TreatsPageState extends State<TreatsPage> {
     final saved = await Constants.navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (_) => TreatForm(treat: treat)),
     );
-    if (saved == true && mounted) await _refresh();
+    if (saved != null && mounted) await _refresh();
   }
 
   Future<void> _delete(TreatResponse treat) async {

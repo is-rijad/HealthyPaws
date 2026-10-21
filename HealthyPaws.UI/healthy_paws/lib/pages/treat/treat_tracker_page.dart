@@ -38,7 +38,8 @@ class _TreatTrackerPageState extends State<TreatTrackerPage> {
 
   Widget _build(BuildContext context) {
     return PageWrapper(
-      appBarTitle: "Praćenje poslastica",
+      showAppBar: false,
+      appBarTitle: "Poslastice",
       body: _dog == null
           ? Column(
               spacing: 12,

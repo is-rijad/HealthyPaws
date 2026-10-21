@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:healthy_paws/common/constants.dart';
-import 'package:healthy_paws/pages/home_page.dart';
+import 'package:healthy_paws/pages/main_shell.dart';
 import 'package:healthy_paws/pages/register_page.dart';
 import 'package:healthy_paws/providers/auth_provider.dart';
 import 'package:healthy_paws/resources/requests/auth/login_request.dart';
@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
       await context.read<AuthProvider>().login(request);
       if (!mounted) return;
       await Constants.navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(builder: (builder) => HomePage()),
+        MaterialPageRoute(builder: (builder) => MainShell()),
         (_) => false,
       );
     }

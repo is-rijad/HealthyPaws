@@ -3,9 +3,6 @@ import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/common/wrappers/load_until_ready_wrapper.dart';
 import 'package:healthy_paws/pages/device/device_form.dart';
 import 'package:healthy_paws/pages/device/device_wizard.dart';
-import 'package:healthy_paws/pages/device/dog_weight_form.dart';
-import 'package:healthy_paws/pages/dog/dog_form.dart';
-import 'package:healthy_paws/pages/dog/dog_weight_history_page.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/resources/requests/dog/dog_gender.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
@@ -34,6 +31,7 @@ class _DevicePageState extends State<DevicePage> {
   Widget _build(BuildContext context) {
     final devices = context.watch<DevicesProvider>().searchResult.items;
     return PageWrapper(
+      showAppBar: false,
       appBarTitle: "Moji uređaji",
       body: Column(
         spacing: 12,
@@ -70,10 +68,7 @@ class _DevicePageState extends State<DevicePage> {
         DateTime.now().difference(lastWeight.createdAt) > _weightMaxAge;
     return Card(
       child: ListTile(
-        onTap: () async => await Constants.navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => DogWeightForm(device: device)),
-        ),
-        onLongPress: () => _showEditDialog(device),
+        onTap: () => _editDevice(device),
         leading: Icon(
           device.isConnected ? Icons.sensors : Icons.sensors_off,
           color: device.isConnected ? Colors.green : Colors.grey,
@@ -130,42 +125,9 @@ class _DevicePageState extends State<DevicePage> {
     );
   }
 
-  Future<void> _showEditDialog(DeviceResponse device) async {
-    final dog = device.dog;
-    final action = await showDialog<_EditAction>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(dog?.name ?? "Uređaj"),
-        children: [
-          if (dog != null)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, _EditAction.dog),
-              child: const Text("Uredi psa"),
-            ),
-          if (dog != null)
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, _EditAction.weights),
-              child: const Text("Historija težina"),
-            ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, _EditAction.device),
-            child: const Text("Uredi uređaj"),
-          ),
-        ],
-      ),
-    );
-    final Widget? page = switch (action) {
-      _EditAction.dog => DogForm(dog: dog!),
-      _EditAction.weights => DogWeightHistoryPage(
-        dogId: dog!.id,
-        dogName: dog.name,
-      ),
-      _EditAction.device => DeviceForm(device: device),
-      null => null,
-    };
-    if (page == null) return;
+  Future<void> _editDevice(DeviceResponse device) async {
     final saved = await Constants.navigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => page),
+      MaterialPageRoute(builder: (_) => DeviceForm(device: device)),
     );
     if (saved == true && mounted) await _refresh();
   }
@@ -181,5 +143,3 @@ class _DevicePageState extends State<DevicePage> {
     await provider.fetchData(_searchObject);
   }
 }
-
-enum _EditAction { dog, weights, device }

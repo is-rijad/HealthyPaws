@@ -5,7 +5,7 @@ import 'package:healthy_paws/common/build_context_extensions.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     hide GlobalMaterialLocalizations;
-import 'package:healthy_paws/pages/home_page.dart';
+import 'package:healthy_paws/pages/main_shell.dart';
 
 class MainApp extends StatelessWidget {
   MainApp({super.key});
@@ -54,7 +54,7 @@ class MainApp extends StatelessWidget {
         iconTheme: IconThemeData(color: context.primaryColor),
         fontFamily: "Inter",
       ),
-      home: const HomePage(),
+      home: const MainShell(),
       localizationsDelegates: [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
