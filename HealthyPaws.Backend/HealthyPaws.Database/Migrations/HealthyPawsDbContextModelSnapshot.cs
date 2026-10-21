@@ -2060,6 +2060,28 @@ namespace HealthyPaws.Database.Migrations
                     b.ToTable("Dogs");
                 });
 
+            modelBuilder.Entity("HealthyPaws.Database.Entity.DogMeal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<TimeOnly>("Time")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DogId", "Time")
+                        .IsUnique();
+
+                    b.ToTable("DogMeals");
+                });
+
             modelBuilder.Entity("HealthyPaws.Database.Entity.DogWeight", b =>
                 {
                     b.Property<int>("Id")
@@ -2300,6 +2322,17 @@ namespace HealthyPaws.Database.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("Breed");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.DogMeal", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                        .WithMany()
+                        .HasForeignKey("DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Dog");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.DogWeight", b =>

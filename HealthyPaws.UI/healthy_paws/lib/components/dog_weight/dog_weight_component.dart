@@ -61,7 +61,7 @@ class DogWeightComponent extends StatelessWidget {
             valueTransformer: (value) => double.parse(value!),
             name: "calorie",
             decoration: InputDecoration(
-              labelText: "Iznos kalorija",
+              labelText: "Iznos kalorija hrane koju pas koristi",
               suffixText: "kcal/100g",
             ),
             validator: FormBuilderValidators.compose([

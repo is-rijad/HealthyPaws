@@ -11,7 +11,13 @@ class DeviceInsertRequest extends JsonRequest {
   String macAddress;
   DogInsertRequest? dog;
   DogWeightInsertRequest? dogWeight;
-  DeviceInsertRequest({required this.macAddress, this.dog, this.dogWeight});
+  List<String>? mealTimes;
+  DeviceInsertRequest({
+    required this.macAddress,
+    this.dog,
+    this.dogWeight,
+    this.mealTimes,
+  });
 
   @override
   Map<String, dynamic> toJson() => _$DeviceInsertRequestToJson(this);

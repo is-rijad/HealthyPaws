@@ -27,6 +27,11 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
             dogWeightInsertRequest.DogId = dog.Id;
             dogWeightInsertRequest.CreatedAt = DateTime.UtcNow;
             await dbContext.DogWeights.AddAsync(dogWeightInsertRequest);
+            await dbContext.DogMeals.AddRangeAsync(request.MealTimes!.Select(t => new Database.Entity.DogMeal
+            {
+                DogId = dog.Id,
+                Time = t
+            }));
             await dbContext.SaveChangesAsync();
         }
 
@@ -136,6 +141,15 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
                 d.Device!.MacAddress == request.MacAddress && d.UserId == authorizationService.GetUserId()))
         {
             throw new BadRequestException("Već posjedujete uređaj s ovim MAC adresom!");
+        }
+
+        if (request is { Dog: not null, DogWeight: not null })
+        {
+            var mealTimes = request.MealTimes;
+            if (mealTimes is not { Count: >= 1 and <= 5 })
+                throw new BadRequestException("Unesite od 1 do 5 obroka dnevno!");
+            if (mealTimes.Distinct().Count() != mealTimes.Count)
+                throw new BadRequestException("Vremena obroka moraju biti različita!");
         }
     }
 }

@@ -13,6 +13,7 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
     public virtual DbSet<Breed> Breeds { get; set; } = null!;
     public virtual DbSet<Device> Devices { get; set; } = null!;
     public virtual DbSet<DogWeight> DogWeights { get; set; } = null!;
+    public virtual DbSet<DogMeal> DogMeals { get; set; } = null!;
     public virtual DbSet<Treat> Treats { get; set; } = null!;
     public virtual DbSet<TreatLog> TreatLogs { get; set; } = null!;
 
@@ -29,6 +30,7 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
 
         modelBuilder.ApplyConfiguration(new DeviceEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DogWeightEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DogMealEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TreatEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TreatLogEntityConfiguration());
     }

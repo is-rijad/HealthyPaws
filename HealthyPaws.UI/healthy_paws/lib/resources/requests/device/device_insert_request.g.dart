@@ -17,6 +17,9 @@ DeviceInsertRequest _$DeviceInsertRequestFromJson(Map<String, dynamic> json) =>
           : DogWeightInsertRequest.fromJson(
               json['dogWeight'] as Map<String, dynamic>,
             ),
+      mealTimes: (json['mealTimes'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
     );
 
 Map<String, dynamic> _$DeviceInsertRequestToJson(
@@ -25,4 +28,5 @@ Map<String, dynamic> _$DeviceInsertRequestToJson(
   'macAddress': instance.macAddress,
   'dog': instance.dog,
   'dogWeight': instance.dogWeight,
+  'mealTimes': instance.mealTimes,
 };

@@ -1,3 +1,4 @@
+import 'package:healthy_paws/pages/device/wizard_steps/fourth_step.dart';
 import 'package:healthy_paws/pages/device/wizard_steps/second_step.dart';
 import 'package:healthy_paws/pages/device/wizard_steps/third_step.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
@@ -36,6 +37,7 @@ class _DeviceWizardState extends State<DeviceWizard> {
           FirstStep(controller: _controller),
           SecondStep(controller: _controller),
           ThirdStep(controller: _controller),
+          FourthStep(controller: _controller),
         ],
       ),
     );
