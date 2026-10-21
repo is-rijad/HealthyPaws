@@ -2,6 +2,7 @@
 using HealthyPaws.Services.Breed;
 using HealthyPaws.Services.Device;
 using HealthyPaws.Services.Dog;
+using HealthyPaws.Services.DogWeight;
 using HealthyPaws.Services.Treat;
 using HealthyPaws.Services.TreatLog;
 using HealthyPaws.Services.User;
@@ -21,6 +22,7 @@ public static class ServicesConfiguration
         services.AddScoped<IDogService, DogService>();
         services.AddScoped<IBreedService, BreedService>();
         services.AddScoped<IDeviceService, DeviceService>();
+        services.AddScoped<IDogWeightService, DogWeightService>();
         services.AddScoped<ITreatService, TreatService>();
         services.AddScoped<ITreatLogService, TreatLogService>();
     }

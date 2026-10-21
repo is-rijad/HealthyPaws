@@ -1,8 +1,8 @@
-﻿
-namespace HealhtyPaws.Models.Responses.DogWeight;
+﻿namespace HealhtyPaws.Models.Responses.DogWeight;
 
 public class DogWeightResponse
 {
+    public int Id { get; set; }
     public int Bcs { get; set; }
     public double Weight { get; set; }
     public double Calorie { get; set; }

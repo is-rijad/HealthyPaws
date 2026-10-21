@@ -8,6 +8,7 @@ part of 'dog_weight_response.dart';
 
 DogWeightResponse _$DogWeightResponseFromJson(Map<String, dynamic> json) =>
     DogWeightResponse(
+      id: (json['id'] as num).toInt(),
       bcs: (json['bcs'] as num).toInt(),
       weight: (json['weight'] as num).toDouble(),
       calorie: (json['calorie'] as num).toDouble(),
@@ -16,6 +17,7 @@ DogWeightResponse _$DogWeightResponseFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$DogWeightResponseToJson(DogWeightResponse instance) =>
     <String, dynamic>{
+      'id': instance.id,
       'bcs': instance.bcs,
       'weight': instance.weight,
       'calorie': instance.calorie,

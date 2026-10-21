@@ -5,6 +5,7 @@ import 'package:healthy_paws/pages/device/device_form.dart';
 import 'package:healthy_paws/pages/device/device_wizard.dart';
 import 'package:healthy_paws/pages/device/dog_weight_form.dart';
 import 'package:healthy_paws/pages/dog/dog_form.dart';
+import 'package:healthy_paws/pages/dog/dog_weight_history_page.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/resources/requests/dog/dog_gender.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
@@ -141,6 +142,11 @@ class _DevicePageState extends State<DevicePage> {
               onPressed: () => Navigator.pop(context, _EditAction.dog),
               child: const Text("Uredi psa"),
             ),
+          if (dog != null)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, _EditAction.weights),
+              child: const Text("Historija težina"),
+            ),
           SimpleDialogOption(
             onPressed: () => Navigator.pop(context, _EditAction.device),
             child: const Text("Uredi uređaj"),
@@ -150,6 +156,10 @@ class _DevicePageState extends State<DevicePage> {
     );
     final Widget? page = switch (action) {
       _EditAction.dog => DogForm(dog: dog!),
+      _EditAction.weights => DogWeightHistoryPage(
+        dogId: dog!.id,
+        dogName: dog.name,
+      ),
       _EditAction.device => DeviceForm(device: device),
       null => null,
     };
@@ -172,4 +182,4 @@ class _DevicePageState extends State<DevicePage> {
   }
 }
 
-enum _EditAction { dog, device }
+enum _EditAction { dog, weights, device }

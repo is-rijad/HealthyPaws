@@ -4,6 +4,7 @@ import 'package:healthy_paws/resources/responses/breed/breed_response.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/resources/responses/dog/calorie_budget_response.dart';
 import 'package:healthy_paws/resources/responses/dog/dog_response.dart';
+import 'package:healthy_paws/resources/responses/dog_weight/dog_weight_response.dart';
 import 'package:healthy_paws/resources/responses/treat/treat_response.dart';
 import 'package:healthy_paws/resources/responses/treat_log/treat_log_response.dart';
 import 'package:healthy_paws/resources/responses/user/user_response.dart';
@@ -17,6 +18,7 @@ final Map<Type, _FromJson> _jsonFactories = {
   DogResponse: (json) => DogResponse.fromJson(json),
   BreedResponse: (json) => BreedResponse.fromJson(json),
   DeviceResponse: (json) => DeviceResponse.fromJson(json),
+  DogWeightResponse: (json) => DogWeightResponse.fromJson(json),
   TreatResponse: (json) => TreatResponse.fromJson(json),
   TreatLogResponse: (json) => TreatLogResponse.fromJson(json),
   CalorieBudgetResponse: (json) => CalorieBudgetResponse.fromJson(json),

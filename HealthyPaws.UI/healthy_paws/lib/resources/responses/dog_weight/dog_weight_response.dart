@@ -5,12 +5,15 @@ import 'package:healthy_paws/common/resources/json_parsable.dart';
 part 'dog_weight_response.g.dart';
 
 @JsonSerializable()
-class DogWeightResponse extends JsonParsable {
+class DogWeightResponse extends JsonResponse {
+  @override
+  int id;
   int bcs;
   double weight;
   double calorie;
   DateTime createdAt;
   DogWeightResponse({
+    required this.id,
     required this.bcs,
     required this.weight,
     required this.calorie,
