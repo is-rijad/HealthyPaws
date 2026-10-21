@@ -2141,6 +2141,74 @@ namespace HealthyPaws.Database.Migrations
                     b.ToTable("ResetPasswordTokens");
                 });
 
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Treat", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("CaloriesPerPiece")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Croatian_CI_AS");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Treats");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.TreatLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("Calories")
+                        .HasColumnType("float");
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("GivenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TreatId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TreatName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(64)")
+                        .UseCollation("Croatian_CI_AS");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TreatId");
+
+                    b.HasIndex("DogId", "GivenAt");
+
+                    b.ToTable("TreatLogs");
+                });
+
             modelBuilder.Entity("HealthyPaws.Database.Entity.User", b =>
                 {
                     b.Property<int>("Id")
@@ -2265,6 +2333,35 @@ namespace HealthyPaws.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Treat", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.TreatLog", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                        .WithMany()
+                        .HasForeignKey("DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthyPaws.Database.Entity.Treat", "Treat")
+                        .WithMany()
+                        .HasForeignKey("TreatId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Dog");
+
+                    b.Navigation("Treat");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.UserDevice", b =>

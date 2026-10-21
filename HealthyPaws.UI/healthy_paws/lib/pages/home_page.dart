@@ -1,5 +1,6 @@
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/pages/device/device_page.dart';
+import 'package:healthy_paws/pages/treat/treat_tracker_page.dart';
 import 'package:healthy_paws/widgets/buttons/primary_button.dart';
 import 'package:healthy_paws/widgets/wrappers/page_wrapper.dart';
 import 'package:material_ui/material_ui.dart';
@@ -29,6 +30,13 @@ class _HomePageState extends State<HomePage> {
             text: "Moji uređaji",
             onPressed: () async => await Constants.navigatorKey.currentState
                 ?.push(MaterialPageRoute(builder: (builder) => DevicePage())),
+          ),
+          PrimaryButton(
+            text: "Praćenje poslastica",
+            onPressed: () async =>
+                await Constants.navigatorKey.currentState?.push(
+                  MaterialPageRoute(builder: (builder) => TreatTrackerPage()),
+                ),
           ),
         ],
       ),

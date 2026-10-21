@@ -10,10 +10,7 @@ class BreedResponse extends JsonResponse {
   @override
   int id;
   String name;
-  BreedResponse({
-    required this.id,
-    required this.name,
-  });
+  BreedResponse({required this.id, required this.name});
   @override
   Map<String, dynamic> toJson() => _$BreedResponseToJson(this);
 

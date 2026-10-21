@@ -22,6 +22,12 @@ public class DogsController(IDogService service) : BaseCrudController<DogInsertR
         return await base.Insert(request);
     }
 
+    [HttpGet("{id}/calorie-budget")]
+    public async Task<IActionResult> GetCalorieBudget(int id, [FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        return Ok(await service.GetCalorieBudgetAsync(id, from, to));
+    }
+
     [HttpPut("{id}")]
     public override async Task<IActionResult> Update(int id, [FromBody] DogInsertRequest request)
     {

@@ -8,5 +8,5 @@ namespace HealthyPaws.Services.Dog;
 
 public interface IDogService : IBaseCrudService<DogInsertRequest, DogInsertRequest, DogResponse, DogSearchObject>
 {
-    
+    Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to);
 }
