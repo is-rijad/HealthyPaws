@@ -10,6 +10,7 @@ class DogWeightComponent extends StatelessWidget {
   final void Function()? onValidated;
   final void Function()? onChanged;
   final bool showCreatedAt;
+  final bool showCalorie;
   final DateTime? newestCreatedAt;
 
   const DogWeightComponent({
@@ -20,6 +21,7 @@ class DogWeightComponent extends StatelessWidget {
     this.onValidated,
     this.onChanged,
     this.showCreatedAt = false,
+    this.showCalorie = true,
     this.newestCreatedAt,
   });
 
@@ -56,23 +58,24 @@ class DogWeightComponent extends StatelessWidget {
               ),
             ]),
           ),
-          FormBuilderTextField(
-            keyboardType: .numberWithOptions(signed: true, decimal: true),
-            valueTransformer: (value) => double.parse(value!),
-            name: "calorie",
-            decoration: InputDecoration(
-              labelText: "Iznos kalorija hrane koju pas koristi",
-              suffixText: "kcal/100g",
+          if (showCalorie)
+            FormBuilderTextField(
+              keyboardType: .numberWithOptions(signed: true, decimal: true),
+              valueTransformer: (value) => double.parse(value!),
+              name: "calorie",
+              decoration: InputDecoration(
+                labelText: "Iznos kalorija hrane koju pas koristi",
+                suffixText: "kcal/100g",
+              ),
+              validator: FormBuilderValidators.compose([
+                FormBuilderValidators.required(
+                  errorText: "Iznos kalorija je obavezan!",
+                ),
+                FormBuilderValidators.positiveNumber(
+                  errorText: "Iznos kalorija ne može biti negativan!",
+                ),
+              ]),
             ),
-            validator: FormBuilderValidators.compose([
-              FormBuilderValidators.required(
-                errorText: "Iznos kalorija je obavezan!",
-              ),
-              FormBuilderValidators.positiveNumber(
-                errorText: "Iznos kalorija ne može biti negativan!",
-              ),
-            ]),
-          ),
           if (showCreatedAt)
             FormBuilderDateTimePicker(
               name: "createdAt",

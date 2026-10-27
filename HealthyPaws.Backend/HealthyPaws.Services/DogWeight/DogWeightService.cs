@@ -3,7 +3,9 @@ using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.BaseServices;
+using HealthyPaws.Services.Exceptions;
 using MapsterMapper;
+using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.DogWeight;
 
@@ -47,5 +49,17 @@ public class DogWeightService(HealthyPawsDbContext dbContext, IMapper mapper, Au
             _ => descending ? queryable.OrderByDescending(w => w.CreatedAt) : queryable.OrderBy(w => w.CreatedAt)
         };
         return descending ? ordered.ThenByDescending(w => w.Id) : ordered.ThenBy(w => w.Id);
+    }
+
+    public async Task<double> GetLatestDogWeightAsync(int dogId)
+    {
+        var latestWeight = await dbContext.DogWeights
+            .Where(w => w.DogId == dogId)
+            .OrderByDescending(w => w.CreatedAt)
+            .Select(w => (double?)w.Weight)
+            .FirstOrDefaultAsync();
+        if (latestWeight == null)
+            throw new BadRequestException("Pas nema zabilježenu težinu!");
+        return latestWeight.Value;
     }
 }

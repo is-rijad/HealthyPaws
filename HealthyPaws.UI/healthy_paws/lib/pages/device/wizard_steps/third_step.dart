@@ -1,7 +1,7 @@
+import 'package:healthy_paws/widgets/wrappers/wizard_step_layout.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:healthy_paws/components/dog_weight/dog_weight_component.dart';
 import 'package:healthy_paws/providers/wizard_providers/third_step_provider.dart';
-import 'package:healthy_paws/resources/requests/dog_weight/dog_weight_insert_request.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:wizard_stepper/wizard_stepper.dart';
@@ -21,28 +21,25 @@ class _ThirdStepState extends State<ThirdStep>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          DogWeightComponent(
-            formKey: _formKey,
-            onValidated: () {
-              if (_formKey.currentState?.saveAndValidate() ?? false) {
-                context
-                    .read<ThirdStepProvider>()
-                    .request = DogWeightInsertRequest.fromJson(
-                  _formKey.currentState!.value,
-                );
-                widget.completeStep(true);
-              }
-            },
-            autovalidateMode: AutovalidateMode.onUserInteractionIfError,
-          ),
-        ],
-      ),
+    return WizardStepLayout(
+      title: "Težina psa",
+      subtitle: "Unesite trenutnu težinu i izgled svog psa.",
+      children: [
+        DogWeightComponent(
+          formKey: _formKey,
+          showCalorie: false,
+          onValidated: () {
+            if (_formKey.currentState?.saveAndValidate() ?? false) {
+              final value = _formKey.currentState!.value;
+              final provider = context.read<ThirdStepProvider>();
+              provider.bcs = value["bcs"] as int;
+              provider.weight = value["weight"] as double;
+              widget.completeStep(true);
+            }
+          },
+          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+        ),
+      ],
     );
   }
 

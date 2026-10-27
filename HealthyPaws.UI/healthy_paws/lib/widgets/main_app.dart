@@ -56,9 +56,8 @@ class MainApp extends StatelessWidget {
       ),
       home: const MainShell(),
       localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
+        ...GlobalMaterialLocalizations.delegates,
         GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: [Locale('hr'), Locale('bs'), Locale('sr')],
       scaffoldMessengerKey: Constants.messengerKey,

@@ -184,14 +184,14 @@ class _HomePageState extends State<HomePage> {
         DateTime.now().difference(last.createdAt) > _weightMaxAge;
     return Card(
       child: InkWell(
-        onTap: () async => await Constants.navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (_) => DogWeightHistoryPage(
-              dogId: device.dogId,
-              dogName: device.dog!.name,
+        onTap: () async {
+          await Constants.navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (_) => DogWeightHistoryPage(device: device),
             ),
-          ),
-        ),
+          );
+          if (mounted) await _loadDogData();
+        },
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(

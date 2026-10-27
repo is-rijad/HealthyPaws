@@ -26,13 +26,17 @@ class DevicesProvider
   Future completeWizard(BuildContext context) async {
     final firstStepRequest = context.read<FirstStepProvider>().request;
     final secondStepRequest = context.read<SecondStepProvider>().request;
-    final thirdStepRequest = context.read<ThirdStepProvider>().request;
-    final mealTimes = context.read<FourthStepProvider>().mealTimes;
+    final thirdStep = context.read<ThirdStepProvider>();
+    final fourthStep = context.read<FourthStepProvider>();
     final request = DeviceInsertRequest(
       macAddress: firstStepRequest!.macAddress,
       dog: secondStepRequest,
-      dogWeight: thirdStepRequest,
-      mealTimes: mealTimes,
+      dogWeight: DogWeightInsertRequest(
+        bcs: thirdStep.bcs!,
+        weight: thirdStep.weight!,
+        calorie: fourthStep.calorie!,
+      ),
+      mealTimes: fourthStep.mealTimes,
     );
     await insert(request);
     if (context.mounted) {

@@ -1,3 +1,4 @@
+import 'package:healthy_paws/widgets/wrappers/wizard_step_layout.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:healthy_paws/components/dog_form/dog_form_component.dart';
 import 'package:healthy_paws/providers/wizard_providers/second_step_provider.dart';
@@ -21,25 +22,22 @@ class _SecondStepState extends State<SecondStep>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          DogFormComponent(
-            formKey: _formKey,
-            onValidated: () {
-              if (_formKey.currentState?.saveAndValidate() ?? false) {
-                context.read<SecondStepProvider>().request =
-                    DogInsertRequest.fromJson(_formKey.currentState!.value);
-                widget.completeStep(true);
-              }
-            },
-            autovalidateMode: AutovalidateMode.onUserInteractionIfError,
-          ),
-        ],
-      ),
+    return WizardStepLayout(
+      title: "Podaci o psu",
+      subtitle: "Unesite osnovne podatke o svom psu.",
+      children: [
+        DogFormComponent(
+          formKey: _formKey,
+          onValidated: () {
+            if (_formKey.currentState?.saveAndValidate() ?? false) {
+              context.read<SecondStepProvider>().request =
+                  DogInsertRequest.fromJson(_formKey.currentState!.value);
+              widget.completeStep(true);
+            }
+          },
+          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+        ),
+      ],
     );
   }
 

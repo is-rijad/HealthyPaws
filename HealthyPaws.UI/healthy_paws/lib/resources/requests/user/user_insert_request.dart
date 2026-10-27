@@ -5,15 +5,11 @@ part 'user_insert_request.g.dart';
 
 @JsonSerializable()
 class UserInsertRequest extends JsonRequest {
-  String firstName;
-  String lastName;
   String email;
   String password;
   String passwordAgain;
 
   UserInsertRequest({
-    required this.firstName,
-    required this.lastName,
     required this.email,
     required this.password,
     required this.passwordAgain,

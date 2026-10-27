@@ -2032,6 +2032,9 @@ namespace HealthyPaws.Database.Migrations
                     b.Property<int>("BreedId")
                         .HasColumnType("int");
 
+                    b.Property<double>("DailyCalorieBudget")
+                        .HasColumnType("float");
+
                     b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("datetime2");
 
@@ -2243,18 +2246,6 @@ namespace HealthyPaws.Database.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .IsUnicode(true)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .IsUnicode(true)
-                        .HasColumnType("nvarchar(64)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

@@ -12,6 +12,7 @@ public class Dog
     public short Gender { get; set; }
     public float ActivityStatus { get; set; }
     public bool IsNeutered { get; set; }
+    public double DailyCalorieBudget { get; set; }
 
     public Breed? Breed { get; set; }
     public ICollection<DogWeight>? DogWeights { get; set; }
@@ -26,6 +27,7 @@ public class DogEntityConfiguration : IEntityTypeConfiguration<Dog> {
         builder.Property(u => u.Gender).IsRequired();
         builder.Property(u => u.ActivityStatus).IsRequired();
         builder.Property(u => u.IsNeutered).IsRequired();
+        builder.Property(u => u.DailyCalorieBudget).IsRequired();
 
         builder.HasOne(u => u.Breed).WithMany(b => b.Dogs).HasForeignKey(d => d.BreedId);
 

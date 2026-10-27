@@ -6,4 +6,5 @@ namespace HealthyPaws.Services.DogWeight;
 
 public interface IDogWeightService : IBaseService<DogWeightResponse, DogWeightSearchObject>
 {
+    public Task<double> GetLatestDogWeightAsync(int dogId);
 }

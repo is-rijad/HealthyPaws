@@ -1,21 +1,21 @@
 import 'package:healthy_paws/common/build_context_extensions.dart';
+import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/common/wrappers/load_until_ready_wrapper.dart';
+import 'package:healthy_paws/pages/device/dog_weight_form.dart';
+import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/providers/dog_weights_provider.dart';
 import 'package:healthy_paws/resources/requests/dog/dog_body_condition_score.dart';
+import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/resources/responses/dog_weight/dog_weight_response.dart';
 import 'package:healthy_paws/resources/search_objects/dog_weight/dog_weight_search_object.dart';
+import 'package:healthy_paws/widgets/buttons/primary_button.dart';
 import 'package:healthy_paws/widgets/wrappers/page_wrapper.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class DogWeightHistoryPage extends StatefulWidget {
-  final int dogId;
-  final String dogName;
-  const DogWeightHistoryPage({
-    super.key,
-    required this.dogId,
-    required this.dogName,
-  });
+  final DeviceResponse device;
+  const DogWeightHistoryPage({super.key, required this.device});
 
   @override
   State<StatefulWidget> createState() => _DogWeightHistoryPageState();
@@ -23,12 +23,14 @@ class DogWeightHistoryPage extends StatefulWidget {
 
 class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
   static const _pageSize = 20;
+
   static const _orderOptions = {
     "createdAt": "Datum",
     "weight": "Težina",
     "bcs": "BCS",
   };
 
+  late DeviceResponse _device = widget.device;
   final _minWeightController = TextEditingController();
   final _maxWeightController = TextEditingController();
   DateTime? _from;
@@ -63,7 +65,7 @@ class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
     final provider = context.watch<DogWeightsProvider>();
     final items = provider.searchResult.items;
     return PageWrapper(
-      appBarTitle: "Težine: ${widget.dogName}",
+      appBarTitle: "Težine: ${_device.dog!.name}",
       body: Column(
         spacing: 8,
         children: [
@@ -88,6 +90,7 @@ class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
                     },
                   ),
           ),
+          PrimaryButton(text: "Dodaj težinu", onPressed: _addWeight),
         ],
       ),
     );
@@ -227,6 +230,21 @@ class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
     );
   }
 
+  Future<void> _addWeight() async {
+    final added = await Constants.navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => DogWeightForm(device: _device)),
+    );
+    if (added != true || !mounted) return;
+    final devices = context.read<DevicesProvider>().searchResult.items;
+    setState(() {
+      _device = devices.firstWhere(
+        (d) => d.id == _device.id,
+        orElse: () => _device,
+      );
+    });
+    await _apply();
+  }
+
   Future<bool> _init() async {
     _search = _buildSearch();
     await _load();
@@ -239,7 +257,7 @@ class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
     return DogWeightSearchObject(
       page: 1,
       pageSize: _pageSize,
-      dogId: widget.dogId,
+      dogId: _device.dogId,
       from: _from == null
           ? null
           : DateTime(_from!.year, _from!.month, _from!.day).toUtc(),

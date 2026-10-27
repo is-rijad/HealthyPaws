@@ -7,4 +7,5 @@ namespace HealthyPaws.Services.TreatLog;
 
 public interface ITreatLogService : IBaseCrudService<TreatLogInsertRequest, TreatLogInsertRequest, TreatLogResponse, TreatLogSearchObject>
 {
+    public Task<double> GetTreatCaloriesAsync(int dogId, DateTime? from, DateTime? to);
 }

@@ -37,40 +37,6 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 const Text("Registracija"),
                 FormBuilderTextField(
-                  name: "firstName",
-                  decoration: InputDecoration(labelText: "Ime"),
-                  validator: FormBuilderValidators.compose([
-                    FormBuilderValidators.required(
-                      errorText: "Ime je obavezno!",
-                    ),
-                    FormBuilderValidators.minLength(
-                      1,
-                      errorText: "Ime nije validno!",
-                    ),
-                    FormBuilderValidators.maxLength(
-                      32,
-                      errorText: "Ime nije validno!",
-                    ),
-                  ]),
-                ),
-                FormBuilderTextField(
-                  name: "lastName",
-                  decoration: InputDecoration(labelText: "Prezime"),
-                  validator: FormBuilderValidators.compose([
-                    FormBuilderValidators.required(
-                      errorText: "Prezime je obavezno!",
-                    ),
-                    FormBuilderValidators.minLength(
-                      1,
-                      errorText: "Prezime nije validno!",
-                    ),
-                    FormBuilderValidators.maxLength(
-                      64,
-                      errorText: "Prezime nije validno!",
-                    ),
-                  ]),
-                ),
-                FormBuilderTextField(
                   name: "email",
                   decoration: InputDecoration(labelText: "Email"),
                   validator: FormBuilderValidators.compose([

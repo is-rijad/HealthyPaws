@@ -38,8 +38,6 @@ public class TokenManager(
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, tokenDto.Id.ToString()),
-            new(JwtRegisteredClaimNames.Name, tokenDto.FirstName),
-            new(JwtRegisteredClaimNames.FamilyName, tokenDto.LastName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
@@ -66,10 +64,8 @@ public class TokenManager(
         if (jwtToken == null)
             throw new InvalidOperationException("Invalid token!");
         var id = int.Parse(jwtToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
-        var firstName = jwtToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.Name).Value;
-        var lastName = jwtToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.FamilyName).Value;
 
-        return new UserInfoTokenDto(id, firstName, lastName);
+        return new UserInfoTokenDto(id);
     }
 
     public async Task<string> GenerateRefreshToken(Database.Entity.User user) {

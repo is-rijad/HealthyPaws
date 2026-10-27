@@ -68,6 +68,18 @@ public class TreatLogService(HealthyPawsDbContext dbContext, IMapper mapper, Aut
         return MapToResponseModel<TreatLogResponse>(entity, mapper);
     }
 
+    public async Task<double> GetTreatCaloriesAsync(int dogId, DateTime? from, DateTime? to)
+    {
+        var periodStart = from?.ToUniversalTime() ?? DateTime.UtcNow.Date;
+        var periodEnd = to?.ToUniversalTime() ?? periodStart.AddDays(1);
+        
+        var treatCalories = await dbContext.TreatLogs
+            .Where(l => l.DogId == dogId && l.GivenAt >= periodStart && l.GivenAt < periodEnd)
+            .SumAsync(l => l.Calories);
+        
+        return Math.Round(treatCalories, 1);
+    }
+
     protected override async Task BeforeDelete(int id, Database.Entity.TreatLog entity)
     {
         await base.BeforeDelete(id, entity);

@@ -4,12 +4,6 @@ using System.Text.Json.Serialization;
 namespace HealhtyPaws.Models.Requests.User;
 
 public record UserUpdateRequest(
-    [Required]
-    [MinLength(1), MaxLength(32)]
-    string FirstName,
-    [Required]
-    [MinLength(1), MaxLength(64)]
-    string LastName,
     [Required][EmailAddress] string Email,
     [Required] bool ChangePassword,
     string? OldPassword,

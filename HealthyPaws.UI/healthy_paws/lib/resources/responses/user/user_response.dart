@@ -7,16 +7,9 @@ part 'user_response.g.dart';
 class UserResponse extends JsonResponse {
   @override
   int id;
-  String firstName;
-  String lastName;
   String email;
 
-  UserResponse({
-    required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.email,
-  });
+  UserResponse({required this.id, required this.email});
 
   @override
   Map<String, dynamic> toJson() => _$UserResponseToJson(this);

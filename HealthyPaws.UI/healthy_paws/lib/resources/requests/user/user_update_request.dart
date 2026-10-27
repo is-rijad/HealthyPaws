@@ -7,8 +7,6 @@ part 'user_update_request.g.dart';
 
 @JsonSerializable()
 class UserUpdateRequest extends JsonRequest {
-  String firstName;
-  String lastName;
   String email;
   bool changePassword;
   String? oldPassword;
@@ -16,8 +14,6 @@ class UserUpdateRequest extends JsonRequest {
   String? passwordAgain;
 
   UserUpdateRequest({
-    required this.firstName,
-    required this.lastName,
     required this.email,
     required this.changePassword,
     this.oldPassword,
