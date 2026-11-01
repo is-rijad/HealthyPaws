@@ -1,8 +1,8 @@
 services:
-  healthy-paws-db:
+  database:
     image: mcr.microsoft.com/mssql/server:2022-CU26-ubuntu-22.04
     restart: unless-stopped
-    container_name: healthy-paws-db
+    container_name: database
     env_file:
       - ./HealthyPaws.WebApi/.env
     ports:
@@ -19,9 +19,28 @@ services:
       start_period: 30s
     networks:
       - healthy-paws
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file:
+      - ./HealthyPaws.WebApi/.env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - healthy-paws
 
 volumes:
   database_data:
+  rabbitmq_data:
 
 networks:
   healthy-paws:

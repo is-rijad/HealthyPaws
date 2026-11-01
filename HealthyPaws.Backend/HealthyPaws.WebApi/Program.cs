@@ -5,11 +5,6 @@ using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.Mapster;
 using HealthyPaws.WebApi.Filters;
 using Mapster;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System;
 using System.Text.Json.Serialization;
 
 Env.Load("./.env");
@@ -39,8 +34,11 @@ TypeAdapterConfig.GlobalSettings.Scan(typeof(MapsterConfiguration).Assembly);
 builder.Services.AddMapster();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddLogging();
+// builder.Services.AddMqPublisher();
 
 builder.Services.ConfigureServices();
+
+// await builder.Services.BindQueues();
 
 var app = builder.Build();
 

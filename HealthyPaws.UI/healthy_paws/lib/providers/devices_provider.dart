@@ -46,17 +46,4 @@ class DevicesProvider
       );
     }
   }
-
-  Future<DeviceResponse> addWeight(
-    int deviceId,
-    DogWeightInsertRequest request,
-  ) async {
-    final updated = await httpProvider
-        .post<DogWeightInsertRequest, DeviceResponse>(
-          "$providerName/$deviceId/weights",
-          request,
-        );
-    updateLocally(updated);
-    return updated;
-  }
 }

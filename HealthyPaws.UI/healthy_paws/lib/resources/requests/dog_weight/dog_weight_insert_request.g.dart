@@ -9,6 +9,7 @@ part of 'dog_weight_insert_request.dart';
 DogWeightInsertRequest _$DogWeightInsertRequestFromJson(
   Map<String, dynamic> json,
 ) => DogWeightInsertRequest(
+  dogId: (json['dogId'] as num?)?.toInt(),
   bcs: (json['bcs'] as num).toInt(),
   weight: (json['weight'] as num).toDouble(),
   calorie: (json['calorie'] as num).toDouble(),
@@ -20,6 +21,7 @@ DogWeightInsertRequest _$DogWeightInsertRequestFromJson(
 Map<String, dynamic> _$DogWeightInsertRequestToJson(
   DogWeightInsertRequest instance,
 ) => <String, dynamic>{
+  'dogId': instance.dogId,
   'bcs': instance.bcs,
   'weight': instance.weight,
   'calorie': instance.calorie,

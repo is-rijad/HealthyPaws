@@ -1,6 +1,5 @@
 ﻿using HealhtyPaws.Models.BaseModels;
 using HealhtyPaws.Models.Requests.Device;
-using HealhtyPaws.Models.Requests.DogWeight;
 using HealhtyPaws.Models.Responses.Device;
 using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Services.Device;
@@ -35,9 +34,4 @@ public class DevicesController(IDeviceService service) : BaseCrudController<Devi
         return await base.Update(id, request);
     }
 
-    [HttpPost("{id}/weights")]
-    public async Task<IActionResult> AddWeight(int id, [FromBody] DogWeightInsertRequest request)
-    {
-        return Ok(await service.AddWeightAsync(id, request));
-    }
 }

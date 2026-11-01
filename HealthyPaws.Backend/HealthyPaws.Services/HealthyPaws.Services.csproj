@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="EasyNetQ" Version="8.1.11" />
+    <PackageReference Include="Google.Protobuf" Version="3.36.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.85.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.85.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Mapster" Version="10.0.13" />
     <PackageReference Include="Mapster.DependencyInjection" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
@@ -19,5 +26,8 @@
     <ProjectReference Include="..\HealthyPaws.Database\HealthyPaws.Database.csproj" />
   </ItemGroup>
 
-	
-	</Project>
+  <ItemGroup>
+    <Protobuf Include="..\healthy_paws.ai\rpc\protos\calorie_agent.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+</Project>

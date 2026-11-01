@@ -1,0 +1,22 @@
+syntax = "proto3";
+option csharp_namespace = "CalorieAgent";
+package calorie_agent;
+
+message CalorieAgentRequest {
+  int32 dogId = 1;
+  repeated LastWeight lastWeights = 2;
+}
+
+message LastWeight {
+  double weight = 1;
+  string measuredAt = 2;
+  int32 bcs = 3;
+}
+
+message CalorieAgentResponse {
+  int32 dogId = 1;
+}
+
+service CalorieAgent {
+  rpc Tick(CalorieAgentRequest) returns(CalorieAgentResponse);
+}

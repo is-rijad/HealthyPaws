@@ -6,11 +6,13 @@ part 'dog_weight_insert_request.g.dart';
 
 @JsonSerializable()
 class DogWeightInsertRequest extends JsonRequest {
+  int? dogId;
   int bcs;
   double weight;
   double calorie;
   DateTime? createdAt;
   DogWeightInsertRequest({
+    this.dogId,
     required this.bcs,
     required this.weight,
     required this.calorie,

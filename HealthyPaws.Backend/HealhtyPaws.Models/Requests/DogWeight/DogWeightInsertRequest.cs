@@ -4,6 +4,7 @@ namespace HealhtyPaws.Models.Requests.DogWeight;
 
 public class DogWeightInsertRequest
 {
+    public int? DogId { get; set; }
     [Required]
     public int Bcs { get; set; }
     [Required]

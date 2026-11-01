@@ -1,5 +1,4 @@
 ﻿using HealhtyPaws.Models.Requests.Device;
-using HealhtyPaws.Models.Requests.DogWeight;
 using HealhtyPaws.Models.Responses.Device;
 using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
@@ -63,46 +62,6 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
 
         await PrepareForResponse(entityEntry.Entity, dbContext);
         return MapToResponseModel<DeviceResponse>(entityEntry.Entity, mapper);
-    }
-
-    private static readonly TimeSpan FutureTolerance = TimeSpan.FromMinutes(5);
-
-    public async Task<DeviceResponse> AddWeightAsync(int deviceId, DogWeightInsertRequest request) {
-        var userId = authorizationService.GetUserId();
-        var device = await dbContext.Devices
-            .Include(d => d.Dog).ThenInclude(d => d!.Breed)
-            .FirstOrDefaultAsync(d => d.Id == deviceId
-                                      && dbContext.UserDevices.Any(ud => ud.DeviceId == d.Id && ud.UserId == userId));
-        if (device == null)
-            throw new NotFoundException("Nije pronađeno!");
-
-        var createdAt = DateTime.UtcNow;
-        if (request.CreatedAt != null) {
-            createdAt = request.CreatedAt.Value.ToUniversalTime();
-            if (createdAt > DateTime.UtcNow.Add(FutureTolerance))
-                throw new BadRequestException("Datum mjerenja ne može biti u budućnosti!");
-
-            var newestCreatedAt = await dbContext.DogWeights
-                .Where(w => w.DogId == device.DogId)
-                .MaxAsync(w => (DateTime?)w.CreatedAt);
-            if (newestCreatedAt != null && createdAt < newestCreatedAt)
-                throw new BadRequestException("Datum mjerenja ne može biti stariji od najnovijeg mjerenja!");
-        }
-
-        var dogWeight = mapper.Map<Database.Entity.DogWeight>(request);
-        dogWeight.DogId = device.DogId;
-        dogWeight.CreatedAt = createdAt;
-        await dbContext.DogWeights.AddAsync(dogWeight);
-        await dbContext.SaveChangesAsync();
-
-        var latestWeight = await dbContext.DogWeights
-            .Where(w => w.DogId == device.DogId)
-            .OrderByDescending(w => w.CreatedAt)
-            .FirstAsync();
-
-        var response = MapToResponseModel<DeviceResponse>(device, mapper);
-        response.LastWeightRecord = mapper.Map<HealhtyPaws.Models.Responses.DogWeight.DogWeightResponse>(latestWeight);
-        return response;
     }
 
     public override async Task<IQueryable<Database.Entity.Device>> ApplyFilter(IQueryable<Database.Entity.Device> queryable, DeviceSearchObject searchObject)

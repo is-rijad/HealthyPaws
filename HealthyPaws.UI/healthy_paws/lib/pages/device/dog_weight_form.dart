@@ -3,6 +3,7 @@ import 'package:healthy_paws/common/components/snackbars/success_snackbar.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/components/dog_weight/dog_weight_component.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
+import 'package:healthy_paws/providers/dog_weights_provider.dart';
 import 'package:healthy_paws/resources/requests/dog_weight/dog_weight_insert_request.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/widgets/buttons/primary_button.dart';
@@ -71,10 +72,14 @@ class _DogWeightFormState extends State<DogWeightForm> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.saveAndValidate() ?? false)) return;
-    final request = DogWeightInsertRequest.fromJson(
-      _formKey.currentState!.value,
-    );
-    await context.read<DevicesProvider>().addWeight(widget.device.id, request);
+    final request = DogWeightInsertRequest.fromJson({
+      ..._formKey.currentState!.value,
+      "dogId": widget.device.dogId,
+    });
+    final added = await context.read<DogWeightsProvider>().insert(request);
+    if (!mounted) return;
+    widget.device.lastWeightRecord = added;
+    context.read<DevicesProvider>().updateLocally(widget.device);
     Constants.messengerKey.currentState?.showSnackBar(
       SuccessSnackbar(message: "Uspješno ste dodali zapis težine psa!"),
     );

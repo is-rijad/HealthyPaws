@@ -15,7 +15,7 @@ public static class DatabaseConfiguration
 
     public static async Task MigrateDatabaseAsync(this IServiceCollection services)
     {
-        using var scope = services.BuildServiceProvider().CreateScope();
+        await using var scope = services.BuildServiceProvider().CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<HealthyPawsDbContext>();
 
         var databaseCreator = context.Database.GetService<IRelationalDatabaseCreator>();
