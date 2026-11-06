@@ -12,6 +12,7 @@ CalorieBudgetResponse _$CalorieBudgetResponseFromJson(
   dogId: (json['dogId'] as num).toInt(),
   dailyBudget: (json['dailyBudget'] as num).toDouble(),
   treatCalories: (json['treatCalories'] as num).toDouble(),
+  foodCalories: (json['foodCalories'] as num).toDouble(),
   remaining: (json['remaining'] as num).toDouble(),
 );
 
@@ -21,5 +22,6 @@ Map<String, dynamic> _$CalorieBudgetResponseToJson(
   'dogId': instance.dogId,
   'dailyBudget': instance.dailyBudget,
   'treatCalories': instance.treatCalories,
+  'foodCalories': instance.foodCalories,
   'remaining': instance.remaining,
 };

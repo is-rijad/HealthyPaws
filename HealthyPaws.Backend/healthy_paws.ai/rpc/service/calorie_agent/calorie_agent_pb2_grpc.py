@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import calorie_agent_pb2 as calorie__agent__pb2
+import rpc.service.calorie_agent.calorie_agent_pb2 as calorie__agent__pb2
 
 GRPC_GENERATED_VERSION = '1.85.1'
 GRPC_VERSION = grpc.__version__

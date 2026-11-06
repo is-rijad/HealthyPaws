@@ -266,7 +266,7 @@ class _HomePageState extends State<HomePage> {
     final isOver = budget.remaining < 0;
     final progress = budget.dailyBudget <= 0
         ? 0.0
-        : (budget.treatCalories / budget.dailyBudget).clamp(0.0, 1.0);
+        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget).clamp(0.0, 1.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
@@ -280,6 +280,9 @@ class _HomePageState extends State<HomePage> {
         LinearProgressIndicator(
           value: progress,
           color: isOver ? Colors.red : context.primaryColor,
+        ),
+                Text(
+          "Hrana: ${budget.foodCalories} / ${budget.dailyBudget} kcal"
         ),
         Text(
           "Poslastice: ${budget.treatCalories} / ${budget.dailyBudget} kcal"

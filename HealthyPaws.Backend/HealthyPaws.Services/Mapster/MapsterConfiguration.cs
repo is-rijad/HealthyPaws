@@ -12,5 +12,6 @@ public class MapsterConfiguration : IRegister
                 src => src.Dog == null || src.Dog.DogWeights == null
                     ? null
                     : src.Dog.DogWeights.OrderByDescending(w => w.CreatedAt).FirstOrDefault());
+        
     }
 }

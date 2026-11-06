@@ -36,8 +36,11 @@ class _ThirdStepState extends State<ThirdStep>
               provider.weight = value["weight"] as double;
               widget.completeStep(true);
             }
+            else {
+              widget.completeStep(false);
+            }
           },
-          autovalidateMode: AutovalidateMode.onUserInteractionIfError,
+          autovalidateMode: AutovalidateMode.always,
         ),
       ],
     );

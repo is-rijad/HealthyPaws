@@ -1,6 +1,7 @@
 import 'package:healthy_paws/common/components/snackbars/success_snackbar.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/common/providers/base_provider.dart';
+import 'package:healthy_paws/providers/auth_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/first_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/fourth_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/second_step_provider.dart';

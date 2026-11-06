@@ -4,7 +4,7 @@ using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.BaseServices;
-using HealthyPaws.Services.Calorie;
+using HealthyPaws.Services.CalorieAgent;
 using HealthyPaws.Services.Exceptions;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace HealthyPaws.Services.Device;
 
 public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService,
-    ICalorieService calorieService) : BaseCrudService<Database.Entity.Device, DeviceInsertRequest, DeviceUpdateRequest, DeviceResponse, DeviceSearchObject>(dbContext, mapper, authorizationService), IDeviceService
+    ICalorieAgentService calorieAgentService) : BaseCrudService<Database.Entity.Device, DeviceInsertRequest, DeviceUpdateRequest, DeviceResponse, DeviceSearchObject>(dbContext, mapper, authorizationService), IDeviceService
 {
     public override async Task<DeviceResponse> InsertAsync(DeviceInsertRequest request) {
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
@@ -23,13 +23,15 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
         if (request.Dog != null && request.DogWeight != null)
         {
             dog = mapper.Map<Database.Entity.Dog>(request.Dog);
-            dog.DailyCalorieBudget = calorieService.CalculateDailyBudget(request);
             await dbContext.Dogs.AddAsync(dog);
             await dbContext.SaveChangesAsync();
             
             var dogWeightInsertRequest = mapper.Map<Database.Entity.DogWeight>(request.DogWeight);
             dogWeightInsertRequest.DogId = dog.Id;
             dogWeightInsertRequest.CreatedAt = DateTime.UtcNow;
+
+            await calorieAgentService.TickAsync(dog, dogWeightInsertRequest);
+            
             await dbContext.DogWeights.AddAsync(dogWeightInsertRequest);
             
             await dbContext.DogMeals.AddRangeAsync(request.MealTimes!.Select(t => new Database.Entity.DogMeal

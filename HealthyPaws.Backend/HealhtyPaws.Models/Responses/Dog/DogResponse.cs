@@ -9,6 +9,5 @@ public record DogResponse(
     DateTime DateOfBirth,
     short Gender,
     float ActivityStatus,
-    short Bcs,
     bool IsNeutered,
     BreedResponse? Breed);

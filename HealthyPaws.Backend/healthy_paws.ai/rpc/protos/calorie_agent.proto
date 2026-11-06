@@ -2,21 +2,93 @@ syntax = "proto3";
 option csharp_namespace = "CalorieAgent";
 package calorie_agent;
 
-message CalorieAgentRequest {
-  int32 dogId = 1;
-  repeated LastWeight lastWeights = 2;
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+enum Action {
+  ACTION_UNSPECIFIED = 0;
+  NO_CHANGE = 1;
+  INCREASE = 2;
+  DECREASE = 3;
+  SET_INITIAL = 4;
+  ESCALATE = 5;
+  REQUEST_REMEASURE = 6;
 }
 
-message LastWeight {
-  double weight = 1;
-  string measuredAt = 2;
+message Measurement {
+  int32 dog_id = 1;
+  double weight = 2;
   int32 bcs = 3;
+  double min_weight = 4;
+  double max_weight = 5;
+  google.protobuf.Timestamp measured_at = 6;
+}
+
+message WeekRecord {
+  google.protobuf.Timestamp measured_at = 1;
+  double weight_kg = 2;
+  optional int32 bcs = 3;
+  optional double eaten_g_per_day = 4;
+  optional double offered_g_per_day = 5;
+}
+
+message IntakeSummary {
+  optional double eaten_g_per_day = 1;
+  optional double offered_g_per_day = 2;
+  double days_covered = 3;
+  double period_days = 4;
+}
+
+message DogProfile {
+  string life_stage = 1;
+  bool neutered = 2;
+  string activity_factor = 3;
+  bool pregnant_or_lactating = 4;
+  double food_kcal_per_gram = 5;
+}
+
+message LearnedState {
+  optional double mer_estimate_kcal = 1;
+  optional double variance_kcal2 = 2;
+  int32 n_updates = 3;
+  int32 consecutive_bad_weeks = 4;
+  int32 weeks_at_bound = 5;
+  optional double pending_weight_kg = 6;
+  optional google.protobuf.Timestamp last_update_at = 7;
+}
+
+message PlanState {
+  optional double current_daily_kcal = 1;
+  int32 plan_version = 2;
+  LearnedState learned = 3;
+}
+
+message CalorieAgentRequest {
+  string correlation_id = 1;
+  Measurement measurement = 2;
+  repeated WeekRecord history = 3;
+  optional IntakeSummary intake = 4;
+  DogProfile profile = 5;
+  optional PlanState plan = 6;
 }
 
 message CalorieAgentResponse {
-  int32 dogId = 1;
+  int32 dog_id = 1;
+  google.protobuf.Timestamp measured_at = 2;
+  string correlation_id = 3;
+  int32 plan_version = 4;
+  Action action = 5;
+  bool plan_changed = 6;
+  optional double new_daily_kcal = 7;
+  optional double new_daily_grams = 8;
+  repeated string reason_codes = 9;
+  string explanation = 10;
+  bool requires_human_review = 11;
+  google.protobuf.Timestamp next_evaluation_at = 12;
+  LearnedState learned = 13;
+  google.protobuf.Struct diagnostics = 14;
 }
 
 service CalorieAgent {
-  rpc Tick(CalorieAgentRequest) returns(CalorieAgentResponse);
+  rpc Tick(CalorieAgentRequest) returns (CalorieAgentResponse);
 }

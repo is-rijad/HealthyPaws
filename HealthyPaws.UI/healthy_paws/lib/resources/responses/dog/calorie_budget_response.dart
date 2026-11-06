@@ -8,11 +8,13 @@ class CalorieBudgetResponse extends JsonParsable {
   int dogId;
   double dailyBudget;
   double treatCalories;
+  double foodCalories;
   double remaining;
   CalorieBudgetResponse({
     required this.dogId,
     required this.dailyBudget,
     required this.treatCalories,
+    required this.foodCalories,
     required this.remaining,
   });
 

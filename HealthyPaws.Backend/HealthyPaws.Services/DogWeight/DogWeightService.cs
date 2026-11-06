@@ -4,13 +4,17 @@ using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.BaseServices;
+using HealthyPaws.Services.CalorieAgent;
 using HealthyPaws.Services.Exceptions;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.DogWeight;
 
-public class DogWeightService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService)
+public class DogWeightService(HealthyPawsDbContext dbContext, 
+    IMapper mapper, 
+    AuthorizationService authorizationService,
+    ICalorieAgentService calorieAgentService)
     : BaseCrudService<Database.Entity.DogWeight, DogWeightInsertRequest, DogWeightUpdateRequest, DogWeightResponse, DogWeightSearchObject>(dbContext, mapper, authorizationService), IDogWeightService
 {
     public override async Task<IQueryable<Database.Entity.DogWeight>> ApplyFilter(IQueryable<Database.Entity.DogWeight> queryable, DogWeightSearchObject searchObject)
@@ -55,20 +59,11 @@ public class DogWeightService(HealthyPawsDbContext dbContext, IMapper mapper, Au
 
     private static readonly TimeSpan FutureTolerance = TimeSpan.FromMinutes(5);
 
-    public override async Task<DogWeightResponse> InsertAsync(DogWeightInsertRequest request)
+    protected override async Task AfterInsert(Database.Entity.DogWeight entity, DogWeightInsertRequest request, HealthyPawsDbContext dbContext)
     {
-        var response = await base.InsertAsync(request);
-
-        var dogId = request.DogId!.Value;
-        var lastWeights = await dbContext.DogWeights
-            .Where(w => w.DogId == dogId)
-            .OrderByDescending(w => w.CreatedAt)
-            .Take(2).ToListAsync();
-        var breed = (await dbContext.Dogs.Include(d => d.Breed).FirstAsync(d => d.Id == dogId)).Breed!;
-
-        var latestWeight = lastWeights[0];
-
-        return response;
+        await base.AfterInsert(entity, request, dbContext);
+        var dog = await dbContext.Dogs.FindAsync(entity.DogId);
+        await calorieAgentService.TickAsync(dog!, entity);
     }
 
     protected override async Task BeforeInsert(DogWeightInsertRequest request)
@@ -78,6 +73,11 @@ public class DogWeightService(HealthyPawsDbContext dbContext, IMapper mapper, Au
             throw new BadRequestException("Pas je obavezan!");
         var dogId = request.DogId.Value;
         await EnsureOwnedAsync(dogId);
+        
+        var plan = await dbContext.DogPlans.SingleAsync(w => w.DogId == dogId);
+        
+        if ((request.CreatedAt ?? DateTime.UtcNow) < plan.NextMeasureAt)
+            throw new BadRequestException("Mjerenje ne može biti prije narednog zakazanog (svako 7 dana)!");
 
         if (request.CreatedAt == null)
             return;

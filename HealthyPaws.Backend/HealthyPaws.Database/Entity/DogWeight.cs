@@ -9,6 +9,8 @@ public class DogWeight {
     public int Bcs { get; set; }
     public double Weight { get; set; }
     public double Calorie { get; set; }
+    public double? EatenGPerDay { get; set; }
+    public double? OfferedGPerDay { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public Dog? Dog { get; set; }

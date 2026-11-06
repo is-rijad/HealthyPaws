@@ -105,7 +105,7 @@ class _TreatTrackerPageState extends State<TreatTrackerPage> {
     final isOver = budget.remaining < 0;
     final progress = budget.dailyBudget <= 0
         ? 0.0
-        : (budget.treatCalories / budget.dailyBudget).clamp(0.0, 1.0);
+        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget).clamp(0.0, 1.0);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -114,6 +114,7 @@ class _TreatTrackerPageState extends State<TreatTrackerPage> {
           spacing: 6,
           children: [
             Text("Dnevni budžet: ${budget.dailyBudget} kcal"),
+            Text("Potrošeno na hranu danas: ${budget.foodCalories} kcal"),
             Text("Date poslastice danas: ${budget.treatCalories} kcal"),
             Text(
               "Preostalo: ${budget.remaining} kcal",

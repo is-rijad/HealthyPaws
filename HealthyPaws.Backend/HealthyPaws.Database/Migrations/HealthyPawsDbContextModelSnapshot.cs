@@ -1989,6 +1989,141 @@ namespace HealthyPaws.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("HealthyPaws.Database.Entity.CalorieAgent.AgentDecisionLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Action")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<bool>("IsRejected")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset>("MeasuredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double?>("NewDailyGrams")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("NewDailyKcal")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Outcome")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PlanVersionInResponse")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReasonCodes")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DogId", "MeasuredAt")
+                        .IsUnique();
+
+                    b.ToTable("AgentDecisionLogs");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.CalorieAgent.Alert", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset>("FirstSeenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("LastSeenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Occurrences")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("ResolvedBy")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DogId", "Reason")
+                        .IsUnique()
+                        .HasFilter("[ResolvedAt] IS NULL");
+
+                    b.ToTable("Alerts");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.CalorieAgent.DogPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("DailyGrams")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DailyKcal")
+                        .HasColumnType("float");
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("LastAppliedMeasuredAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTime>("NextMeasureAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PlanVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DogPlans");
+                });
+
             modelBuilder.Entity("HealthyPaws.Database.Entity.Device", b =>
                 {
                     b.Property<int>("Id")
@@ -2031,9 +2166,6 @@ namespace HealthyPaws.Database.Migrations
 
                     b.Property<int>("BreedId")
                         .HasColumnType("int");
-
-                    b.Property<double>("DailyCalorieBudget")
-                        .HasColumnType("float");
 
                     b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("datetime2");
@@ -2105,6 +2237,12 @@ namespace HealthyPaws.Database.Migrations
                     b.Property<int>("DogId")
                         .HasColumnType("int");
 
+                    b.Property<double?>("EatenGPerDay")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("OfferedGPerDay")
+                        .HasColumnType("float");
+
                     b.Property<double>("Weight")
                         .HasColumnType("float");
 
@@ -2113,6 +2251,39 @@ namespace HealthyPaws.Database.Migrations
                     b.HasIndex("DogId");
 
                     b.ToTable("DogWeights");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.FeedingRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EatenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("EatenG")
+                        .HasColumnType("float");
+
+                    b.Property<double>("OfferedG")
+                        .HasColumnType("float");
+
+                    b.Property<int>("PlanId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId");
+
+                    b.HasIndex("DogId", "EatenAt")
+                        .IsUnique();
+
+                    b.ToTable("FeedingRecords");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.RefreshToken", b =>
@@ -2289,6 +2460,45 @@ namespace HealthyPaws.Database.Migrations
                     b.ToTable("UserDevices");
                 });
 
+            modelBuilder.Entity("HealthyPaws.Database.Entity.CalorieAgent.DogPlan", b =>
+                {
+                    b.OwnsOne("HealthyPaws.Database.Entity.CalorieAgent.LearnedState", "Learned", b1 =>
+                        {
+                            b1.Property<int>("DogPlanId")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("ConsecutiveBadWeeks")
+                                .HasColumnType("int");
+
+                            b1.Property<DateTimeOffset?>("LastUpdateAt")
+                                .HasColumnType("datetimeoffset");
+
+                            b1.Property<double?>("MerEstimateKcal")
+                                .HasColumnType("float");
+
+                            b1.Property<int>("NUpdates")
+                                .HasColumnType("int");
+
+                            b1.Property<double?>("PendingWeightKg")
+                                .HasColumnType("float");
+
+                            b1.Property<double?>("VarianceKcal2")
+                                .HasColumnType("float");
+
+                            b1.Property<int>("WeeksAtBound")
+                                .HasColumnType("int");
+
+                            b1.HasKey("DogPlanId");
+
+                            b1.ToTable("LearnedStates");
+
+                            b1.WithOwner()
+                                .HasForeignKey("DogPlanId");
+                        });
+
+                    b.Navigation("Learned");
+                });
+
             modelBuilder.Entity("HealthyPaws.Database.Entity.Device", b =>
                 {
                     b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
@@ -2335,6 +2545,25 @@ namespace HealthyPaws.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("Dog");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.FeedingRecord", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                        .WithMany()
+                        .HasForeignKey("DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("HealthyPaws.Database.Entity.CalorieAgent.DogPlan", "Plan")
+                        .WithMany()
+                        .HasForeignKey("PlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Dog");
+
+                    b.Navigation("Plan");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.RefreshToken", b =>

@@ -1,4 +1,5 @@
 ﻿using HealthyPaws.Database.Entity;
+using HealthyPaws.Database.Entity.CalorieAgent;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Database;
@@ -16,6 +17,12 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
     public virtual DbSet<DogMeal> DogMeals { get; set; } = null!;
     public virtual DbSet<Treat> Treats { get; set; } = null!;
     public virtual DbSet<TreatLog> TreatLogs { get; set; } = null!;
+    public virtual DbSet<FeedingRecord> FeedingRecords { get; set; } = null!;
+
+    public virtual DbSet<AgentDecisionLog> AgentDecisionLogs { get; set; } = null!;
+    public virtual DbSet<Alert> Alerts { get; set; } = null!;
+    public virtual DbSet<DogPlan> DogPlans { get; set; } = null!;
+    public virtual DbSet<LearnedState> LearnedStates { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,5 +40,10 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
         modelBuilder.ApplyConfiguration(new DogMealEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TreatEntityConfiguration());
         modelBuilder.ApplyConfiguration(new TreatLogEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new FeedingRecordEntityConfiguration());
+        
+        modelBuilder.ApplyConfiguration(new AgentDecisionLogEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new AlertEntityConfiguration());
+        modelBuilder.ApplyConfiguration(new DogPlanEntityConfiguration());
     }
 }
