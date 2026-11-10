@@ -8,3 +8,4 @@ class IntakeSummary:
     offered_g_per_day: Optional[float]
     days_covered: float
     period_days: float
+    treat_kcal_per_day: Optional[float] = None

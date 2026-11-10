@@ -1,4 +1,5 @@
-﻿using HealthyPaws.Database.Entity;
+﻿using HealthyPaws.Database.Converters;
+using HealthyPaws.Database.Entity;
 using HealthyPaws.Database.Entity.CalorieAgent;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,12 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
     public virtual DbSet<Alert> Alerts { get; set; } = null!;
     public virtual DbSet<DogPlan> DogPlans { get; set; } = null!;
     public virtual DbSet<LearnedState> LearnedStates { get; set; } = null!;
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -2005,13 +2005,16 @@ namespace HealthyPaws.Database.Migrations
                         .HasMaxLength(36)
                         .HasColumnType("nvarchar(36)");
 
+                    b.Property<string>("Diagnostics")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("DogId")
                         .HasColumnType("int");
 
                     b.Property<string>("Explanation")
                         .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<bool>("IsRejected")
                         .HasColumnType("bit");
@@ -2033,11 +2036,14 @@ namespace HealthyPaws.Database.Migrations
 
                     b.Property<string>("ReasonCodes")
                         .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
 
                     b.Property<DateTimeOffset>("ReceivedAt")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("RequiresHumanReview")
+                        .HasColumnType("bit");
 
                     b.HasKey("Id");
 

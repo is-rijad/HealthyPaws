@@ -38,15 +38,20 @@ public class AgentDecisionLog
     public int PlanVersionInResponse { get; set; }
     public DateTimeOffset ReceivedAt { get; set; }
     public bool IsRejected { get; set; }
+    public bool RequiresHumanReview { get; set; }
+    public string? Diagnostics { get; set; }
 }
 
 public class AgentDecisionLogEntityConfiguration : IEntityTypeConfiguration<AgentDecisionLog> {
+    public const int ReasonCodesMaxLength = 512;
+    public const int ExplanationMaxLength = 2000;
+
     public void Configure(EntityTypeBuilder<AgentDecisionLog> builder) {
         builder.HasKey(b => b.Id);
         builder.HasIndex(x => new { x.DogId, x.MeasuredAt }).IsUnique();
         
         builder.Property(x => x.CorrelationId).HasMaxLength(36);
-        builder.Property(x => x.ReasonCodes).HasMaxLength(128);
-        builder.Property(x => x.Explanation).HasMaxLength(512);
+        builder.Property(x => x.ReasonCodes).HasMaxLength(ReasonCodesMaxLength);
+        builder.Property(x => x.Explanation).HasMaxLength(ExplanationMaxLength);
     }
 }

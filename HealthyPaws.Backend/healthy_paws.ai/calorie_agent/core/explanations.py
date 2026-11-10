@@ -6,7 +6,7 @@ class Explanations:
         "INITIAL_PLAN": "Početni plan iz formule (RER × faktori) prilagođen stanju psa: {new_kcal:.0f} kcal/dan.",
         "FIRST_MEASUREMENT": "Prvo mjerenje: još nema historije za procjenu, plan ostaje isti.",
         "STALE_MEASUREMENT": "Mjerenje nije novije od zadnjeg obrađenog, preskačem ga.",
-        "MEASUREMENT_TOO_SOON": "Od zadnjeg mjerenja prošlo je samo {dt_days:.1f} dana, što je premalo za pouzdan zaključak.",
+        "MEASUREMENT_TOO_SOON": "Od zadnjeg mjerenja prošlo je samo {days_since_previous:.1f} dana, što je premalo za pouzdan zaključak.",
         "INVALID_MEASUREMENT": "Unesena težina ili BCS nisu valjani ({detail}). Molim ponovite vaganje.",
         "INVALID_INPUT": "Ulazni podaci nisu valjani ({detail}). Potrebna je provjera.",
         "WEIGHT_OUT_OF_RANGE_CONFIRMED": (
@@ -36,7 +36,7 @@ class Explanations:
             "Predviđanja se uzastopno ne poklapaju sa stvarnom težinom. Model ne opisuje ovog psa "
             "(moguće hrana mimo hranilice ili zdravstveni problem)."),
         "ESTIMATE_FAR_FROM_PRIOR": (
-            "Procijenjena potrošnja ({mer_est:.0f} kcal) jako odstupa od formule ({prior_mer:.0f} kcal). "
+            "Procijenjena potrošnja ({mer_estimate:.0f} kcal) jako odstupa od formule ({prior_mer:.0f} kcal). "
             "Preporučuje se provjera."),
         "UNEXPLAINED_WEIGHT_LOSS": "Težina stalno pada ({slope:+.2f} kg/sedmično) iako to nije cilj. Preporučuje se pregled kod veterinara.",
         "RAPID_LOSS_ON_DIET": "Gubitak težine je brži od sigurnog ({slope:+.2f} kg/sedmično). Preporučuje se provjera.",
@@ -61,16 +61,17 @@ class Explanations:
     }
 
     @classmethod
-    def explain(cls, codes: list[str] | tuple[str, ...], ctx: dict) -> str:
-        values = defaultdict(lambda: float("nan"), ctx)
-        parts: list[str] = []
-        for code in codes:
-            template = Explanations._TEMPLATES.get(code)
+    def explain(cls, reason_codes: list[str] | tuple[str, ...], context: dict) -> str:
+        """Spaja rečenice za sve reason kodove; nedostajuća vrijednost iz konteksta se prikazuje kao nan."""
+        values = defaultdict(lambda: float("nan"), context)
+        sentences: list[str] = []
+        for reason_code in reason_codes:
+            template = Explanations._TEMPLATES.get(reason_code)
             if template is None:
-                parts.append(code)
+                sentences.append(reason_code)
                 continue
             try:
-                parts.append(template.format_map(values))
+                sentences.append(template.format_map(values))
             except (ValueError, KeyError, IndexError):
-                parts.append(code)
-        return " ".join(parts) if parts else "Bez promjene."
+                sentences.append(reason_code)
+        return " ".join(sentences) if sentences else "Bez promjene."

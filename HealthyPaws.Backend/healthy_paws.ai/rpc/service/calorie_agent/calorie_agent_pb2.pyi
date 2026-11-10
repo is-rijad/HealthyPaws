@@ -59,16 +59,18 @@ class WeekRecord(_message.Message):
     def __init__(self, measured_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., weight_kg: _Optional[float] = ..., bcs: _Optional[int] = ..., eaten_g_per_day: _Optional[float] = ..., offered_g_per_day: _Optional[float] = ...) -> None: ...
 
 class IntakeSummary(_message.Message):
-    __slots__ = ("eaten_g_per_day", "offered_g_per_day", "days_covered", "period_days")
+    __slots__ = ("eaten_g_per_day", "offered_g_per_day", "days_covered", "period_days", "treat_kcal_per_day")
     EATEN_G_PER_DAY_FIELD_NUMBER: _ClassVar[int]
     OFFERED_G_PER_DAY_FIELD_NUMBER: _ClassVar[int]
     DAYS_COVERED_FIELD_NUMBER: _ClassVar[int]
     PERIOD_DAYS_FIELD_NUMBER: _ClassVar[int]
+    TREAT_KCAL_PER_DAY_FIELD_NUMBER: _ClassVar[int]
     eaten_g_per_day: float
     offered_g_per_day: float
     days_covered: float
     period_days: float
-    def __init__(self, eaten_g_per_day: _Optional[float] = ..., offered_g_per_day: _Optional[float] = ..., days_covered: _Optional[float] = ..., period_days: _Optional[float] = ...) -> None: ...
+    treat_kcal_per_day: float
+    def __init__(self, eaten_g_per_day: _Optional[float] = ..., offered_g_per_day: _Optional[float] = ..., days_covered: _Optional[float] = ..., period_days: _Optional[float] = ..., treat_kcal_per_day: _Optional[float] = ...) -> None: ...
 
 class DogProfile(_message.Message):
     __slots__ = ("life_stage", "neutered", "activity_factor", "pregnant_or_lactating", "food_kcal_per_gram")

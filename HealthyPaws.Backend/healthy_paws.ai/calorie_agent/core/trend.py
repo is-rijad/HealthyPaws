@@ -12,14 +12,15 @@ class Trend:
     n: int
 
 
-def fit(points: Sequence[tuple[float, float]], sigma_kg: float) -> Optional[Trend]:
-    n = len(points)
-    if n < 3:
+def fit(points: Sequence[tuple[float, float]], weight_sigma_kg: float) -> Optional[Trend]:
+    """Linearna regresija težine po vremenu; tačke su (vrijeme u sedmicama, težina u kg)."""
+    point_count = len(points)
+    if point_count < 3:
         return None
-    t_mean = sum(t for t, _ in points) / n
-    w_mean = sum(w for _, w in points) / n
-    sxx = sum((t - t_mean) ** 2 for t, _ in points)
-    if sxx <= 0:
+    mean_time = sum(time for time, _ in points) / point_count
+    mean_weight = sum(weight for _, weight in points) / point_count
+    time_variation = sum((time - mean_time) ** 2 for time, _ in points)
+    if time_variation <= 0:
         return None
-    sxy = sum((t - t_mean) * (w - w_mean) for t, w in points)
-    return Trend(sxy / sxx, sigma_kg / math.sqrt(sxx), n)
+    covariation = sum((time - mean_time) * (weight - mean_weight) for time, weight in points)
+    return Trend(covariation / time_variation, weight_sigma_kg / math.sqrt(time_variation), point_count)

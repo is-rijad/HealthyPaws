@@ -78,7 +78,7 @@ class CalorieAgentConfig:
     # --- ostalo -------------------------------------------------------------
     next_evaluation_days: float = 7.0
     bcs_low_max: int = 3
-    bcs_high_min: int = 6
+    bcs_high_min: int = 7
 
     activity_factors = [1.2]
     valid_bcs = [1, 3, 5, 7, 9]

@@ -19,28 +19,33 @@ class LearnedState:
 
     @staticmethod
     def sane_learned(agent: ca.CalorieAgent) -> LearnedState:
-        learned : LearnedState | None = agent.plan.learned if agent.plan is not None else None
-        if learned is None:
+        """Čisti naučeno stanje iz baze: nevaljane vrijednosti se odbacuju, a brojači ne smiju biti negativni."""
+        stored: LearnedState | None = agent.plan.learned if agent.plan is not None else None
+        if stored is None:
             return LearnedState()
-        est, var, pending = learned.mer_estimate_kcal, learned.variance_kcal2, learned.pending_weight_kg
-        changed = False
-        if not (est is None and var is None):
-            if not (est is not None and var is not None and math.isfinite(est) and math.isfinite(var)
-                    and est > 0 and var > 0):
-                est = var = None
-                changed = True
-        if pending is not None and not (math.isfinite(pending) and pending > 0):
-            pending, changed = None, True
+        mer_estimate, variance, pending_weight = stored.mer_estimate_kcal, stored.variance_kcal2, stored.pending_weight_kg
+        was_modified = False
+        # Procjena i varijansa vrijede samo zajedno: obje nepostavljene, ili obje konačne i pozitivne.
+        if not (mer_estimate is None and variance is None):
+            if not (mer_estimate is not None and variance is not None
+                    and math.isfinite(mer_estimate) and math.isfinite(variance)
+                    and mer_estimate > 0 and variance > 0):
+                mer_estimate = variance = None
+                was_modified = True
+        if pending_weight is not None and not (math.isfinite(pending_weight) and pending_weight > 0):
+            pending_weight, was_modified = None, True
 
-        counters = [max(0, c) for c in (learned.n_updates, learned.consecutive_bad_weeks, learned.weeks_at_bound)]
-        if counters != [learned.n_updates, learned.consecutive_bad_weeks, learned.weeks_at_bound]:
-            changed = True
+        stored_counters = [stored.n_updates, stored.consecutive_bad_weeks, stored.weeks_at_bound]
+        counters = [max(0, counter) for counter in stored_counters]
+        if counters != stored_counters:
+            was_modified = True
 
-        if not changed:
-            return learned
-        agent.reasons.append("LEARNED_STATE_RESET")
-        return replace(learned, mer_estimate_kcal=est, variance_kcal2=var, pending_weight_kg=pending,
-                       n_updates=counters[0], consecutive_bad_weeks=counters[1], weeks_at_bound=counters[2])
+        if not was_modified:
+            return stored
+        agent.reason_codes.append("LEARNED_STATE_RESET")
+        return replace(stored, mer_estimate_kcal=mer_estimate, variance_kcal2=variance,
+                       pending_weight_kg=pending_weight, n_updates=counters[0],
+                       consecutive_bad_weeks=counters[1], weeks_at_bound=counters[2])
 
     def to_pb2(self) -> calorie_agent_pb2.LearnedState:
         return calorie_agent_pb2.LearnedState(

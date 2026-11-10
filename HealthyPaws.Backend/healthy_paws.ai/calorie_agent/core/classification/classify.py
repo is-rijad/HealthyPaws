@@ -12,49 +12,60 @@ class Classify:
         self.agent = agent
 
     def classify_and_check(self):
-        cls = self._classify()
-        self.agent.ctx["cls"] = cls
-        self.agent.diag.update(state=cls.state.value, conflict=cls.conflict, target_weight_kg=cls.target_weight_kg)
+        previous_record = self.agent.previous_record
+        classification = self._classify(previous_record.bcs if previous_record is not None else None)
+        self.agent.context["classification"] = classification
+        self.agent.diagnostics.update(state=classification.state.value, conflict=classification.conflict,
+                                      target_weight_kg=classification.target_weight_kg)
 
-        if cls.bcs_unconfirmed:
-            self.agent.reasons.append("BCS_UNCONFIRMED")
-        if cls.contradiction:
+        if classification.bcs_unconfirmed:
+            self.agent.reason_codes.append("BCS_UNCONFIRMED")
+        if classification.contradiction:
             return self.agent.decisions.stop(Action.ESCALATE, "CONTRADICTORY_BCS_WEIGHT")
 
-        w_ref = statistics.median([r.weight_kg for r in self.agent.hist[-3:]] + [self.agent.m.weight])
-        floor, ceiling = self.agent.calculations.kcal_bounds(w_ref, (self.agent.m.min_weight + self.agent.m.max_weight) / 2.0)
-        self.agent.diag["bounds_weight_kg"] = w_ref
-        self.agent.ctx.update(floor=floor, ceiling=ceiling)
-        self.agent.diag.update(floor_kcal=floor, ceiling_kcal=ceiling)
+        measurement = self.agent.measurement
+        reference_weight_kg = statistics.median(
+            [record.weight_kg for record in self.agent.history[-3:]] + [measurement.weight])
+        breed_midpoint_kg = (measurement.min_weight + measurement.max_weight) / 2.0
+        # Dozvoljeni koridor kalorija: od mirovanja lakše do 3x mirovanja teže težine (trenutne ili ciljne).
+        floor_kcal, ceiling_kcal = self.agent.calculations.kcal_bounds(reference_weight_kg, breed_midpoint_kg)
+        self.agent.diagnostics["bounds_weight_kg"] = reference_weight_kg
+        self.agent.context.update(floor=floor_kcal, ceiling=ceiling_kcal)
+        self.agent.diagnostics.update(floor_kcal=floor_kcal, ceiling_kcal=ceiling_kcal)
 
         return None
 
-    def _classify(self, prev_bcs: Optional[int] = None) -> Classification:
-        m = self.agent.m
+    def _classify(self, previous_bcs: Optional[int] = None) -> Classification:
+        measurement = self.agent.measurement
 
-        bcs_dir = self.agent.calculations.bcs_direction(m.bcs)
-        weight_dir = -1 if m.weight < m.min_weight else (1 if m.weight > m.max_weight else 0)
-        mid = (m.min_weight + m.max_weight) / 2.0
+        bcs_deviation = self.agent.calculations.bcs_direction(measurement.bcs)
+        weight_deviation = (-1 if measurement.weight < measurement.min_weight
+                            else (1 if measurement.weight > measurement.max_weight else 0))
+        breed_midpoint_kg = (measurement.min_weight + measurement.max_weight) / 2.0
 
-        if bcs_dir * weight_dir == -1:
-            return Classification(BodyState.IDEAL, False, True, m.weight, bcs_dir, weight_dir)
+        # BCS i težina govore suprotno (npr. BCS 9, a težina ispod minimuma pasmine).
+        if bcs_deviation * weight_deviation == -1:
+            return Classification(BodyState.IDEAL, False, True, measurement.weight, bcs_deviation, weight_deviation)
 
-        unconfirmed = False
-        if bcs_dir == weight_dir:
-            eff = bcs_dir
-        elif prev_bcs is not None and self.agent.calculations.bcs_direction(prev_bcs) == bcs_dir:
-            eff = bcs_dir
+        bcs_unconfirmed = False
+        if bcs_deviation == weight_deviation:
+            effective_deviation = bcs_deviation
+        elif (previous_bcs is not None
+              and self.agent.calculations.bcs_direction(previous_bcs) == bcs_deviation):
+            # BCS se ne slaže s težinom, ali ga je potvrdilo i prethodno mjerenje.
+            effective_deviation = bcs_deviation
         else:
-            eff = weight_dir
-            unconfirmed = True
+            effective_deviation = weight_deviation
+            bcs_unconfirmed = True
 
-        if eff == 1:
-            target = mid if weight_dir == 1 else m.min_weight
-            return Classification(BodyState.OVERWEIGHT, weight_dir != 1, False, target, bcs_dir, weight_dir,
-                                  unconfirmed)
-        if eff == -1:
-            target = mid if weight_dir == -1 else m.max_weight
-            return Classification(BodyState.UNDERWEIGHT, weight_dir != -1, False, target, bcs_dir, weight_dir,
-                                  unconfirmed)
+        if effective_deviation == 1:
+            target_weight_kg = breed_midpoint_kg if weight_deviation == 1 else measurement.min_weight
+            return Classification(BodyState.OVERWEIGHT, weight_deviation != 1, False, target_weight_kg,
+                                  bcs_deviation, weight_deviation, bcs_unconfirmed)
+        if effective_deviation == -1:
+            target_weight_kg = breed_midpoint_kg if weight_deviation == -1 else measurement.max_weight
+            return Classification(BodyState.UNDERWEIGHT, weight_deviation != -1, False, target_weight_kg,
+                                  bcs_deviation, weight_deviation, bcs_unconfirmed)
 
-        return Classification(BodyState.IDEAL, weight_dir != 0, False, m.weight, bcs_dir, weight_dir, unconfirmed)
+        return Classification(BodyState.IDEAL, weight_deviation != 0, False, measurement.weight,
+                              bcs_deviation, weight_deviation, bcs_unconfirmed)

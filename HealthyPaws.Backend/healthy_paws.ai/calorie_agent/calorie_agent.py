@@ -22,77 +22,86 @@ from rpc.service.calorie_agent.calorie_agent_pb2 import CalorieAgentRequest, Cal
 
 
 class CalorieAgent:
-    def __init__(self, cfg: CalorieAgentConfig):
-        self.learned : LearnedState
-        self.cfg = cfg
+    SECONDS_PER_DAY = 86400.0
+    SECONDS_PER_WEEK = 7 * SECONDS_PER_DAY
+
+    def __init__(self, config: CalorieAgentConfig):
+        self.learned: LearnedState
+        self.config = config
         self.decisions = Decisions(self)
-        self.calculations = Calculations(self.cfg)
+        self.calculations = Calculations(self.config)
         self.estimator = Estimator(self)
-        self.classify = Classify(self)
-        self.reasons: list[str] = []
+        self.classifier = Classify(self)
+        self.reason_codes: list[str] = []
 
+    def run(self, proto_request: CalorieAgentRequest) -> CalorieAgentResponse:
+        """Lanac čuvara: svaki korak vraća gotov odgovor (obrada staje) ili None (nastavlja se dalje)."""
+        self._init_request(proto_request)
 
-    def run(self, req: CalorieAgentRequest) -> CalorieAgentResponse:
-        self._init_request(req)
-
-        validation_result = self._validate()
-        if validation_result is not None:
-            return validation_result
+        validation_response = self._validate()
+        if validation_response is not None:
+            return validation_response
 
         self._calculate_and_assign_prior()
 
-        self.classify.classify_and_check()
+        classification_response = self.classifier.classify_and_check()
+        if classification_response is not None:
+            return classification_response
 
         if self.plan is None or self.plan.current_daily_kcal is None:
-            initial_plan = InitialPlan(self)
-            res = initial_plan.create_initial_plan()
-            return self.decisions.finish(Action.SET_INITIAL, kcal=res)
-        if self.prev is None:
+            initial_daily_kcal = InitialPlan(self).create_initial_plan()
+            return self.decisions.finish(Action.SET_INITIAL, kcal=initial_daily_kcal)
+        if self.previous_record is None:
             return self.decisions.stop(Action.NO_CHANGE, "FIRST_MEASUREMENT")
 
-        intake = self._check_intake()
-        if intake is not None:
-            return intake
+        intake_response = self._check_intake()
+        if intake_response is not None:
+            return intake_response
 
-        learn = self._learn()
-        if learn is not None:
-            return learn
-        
-        safety = self._check_safety()
-        if safety is not None:
-            return safety
-        
-        ideal = self._is_ideal()
-        if ideal is not None:
-            return ideal
+        learning_response = self._learn()
+        if learning_response is not None:
+            return learning_response
+
+        safety_response = self._check_safety()
+        if safety_response is not None:
+            return safety_response
+
+        ideal_response = self._is_ideal()
+        if ideal_response is not None:
+            return ideal_response
 
         return self._regulate()
 
-    def _init_request(self, req: CalorieAgentRequest) -> None:
-        self.request = TickRequest.serialize(req)
-        self.m, self.profile, self.plan = self.request.measurement, self.request.profile, self.request.plan
+    def _init_request(self, proto_request: CalorieAgentRequest) -> None:
+        self.request = TickRequest.serialize(proto_request)
+        self.measurement = self.request.measurement
+        self.profile = self.request.profile
+        self.plan = self.request.plan
         self.learned: LearnedState = LearnedState.sane_learned(self)
-        self.ctx: dict = {"weight": self.m.weight, "bcs": self.m.bcs}
-        self.diag: dict = {}
-        self.hist: list[WeekRecord] = sorted(
-            (r for r in self.request.history if math.isfinite(r.weight_kg) and r.weight_kg > 0),
-            key=lambda r: r.measured_at,
+        self.context: dict = {"weight": self.measurement.weight, "bcs": self.measurement.bcs}
+        self.diagnostics: dict = {}
+        # Historija bez nevaljanih težina, od najstarijeg mjerenja prema najnovijem.
+        self.history: list[WeekRecord] = sorted(
+            (record for record in self.request.history if math.isfinite(record.weight_kg) and record.weight_kg > 0),
+            key=lambda record: record.measured_at,
         )
-        self.prev: Optional[WeekRecord] = self.hist[-1] if self.hist else None
-        self.dt_days: Optional[float] = (
-            (self.m.measured_at - self.prev.measured_at).total_seconds() / 86400.0 if self.prev else None
+        self.previous_record: Optional[WeekRecord] = self.history[-1] if self.history else None
+        self.days_since_previous: Optional[float] = (
+            (self.measurement.measured_at - self.previous_record.measured_at).total_seconds() / self.SECONDS_PER_DAY
+            if self.previous_record else None
         )
-        self.sigma_w = self.calculations.weight_sigma(self.m.weight) if self.m.weight > 0 else self.cfg.weight_sigma_abs_kg
+        self.weight_sigma_kg = (self.calculations.weight_sigma(self.measurement.weight)
+                                if self.measurement.weight > 0 else self.config.weight_sigma_abs_kg)
 
     def _validate(self) -> CalorieAgentResponse | None:
-        issues = TickRequestValidator.validate(self.request, self.cfg)
+        issues = TickRequestValidator.validate(self.request, self.config)
         if issues:
-            self.diag["validation"] = [i.to_dict() for i in issues]
-        block = TickRequestValidator.first_blocking(issues)
-        if block is not None:
-            self.ctx["detail"] = block.detail
-            if block.severity is Severity.REMEASURE:
-                if block.confirmable:
+            self.diagnostics["validation"] = [issue.to_dict() for issue in issues]
+        blocking_issue = TickRequestValidator.first_blocking(issues)
+        if blocking_issue is not None:
+            self.context["detail"] = blocking_issue.detail
+            if blocking_issue.severity is Severity.REMEASURE:
+                if blocking_issue.confirmable:
                     return self.decisions.confirm_or_remeasure()
                 return self.decisions.stop(Action.REQUEST_REMEASURE, "INVALID_MEASUREMENT")
             return self.decisions.stop(Action.ESCALATE, "INVALID_INPUT")
@@ -100,139 +109,167 @@ class CalorieAgent:
         if self.profile.life_stage.strip().lower() == "puppy" or self.profile.pregnant_or_lactating:
             return self.decisions.stop(Action.ESCALATE, "UNSUPPORTED_LIFE_STAGE")
 
-        if self.prev is not None and self.m.measured_at <= self.prev.measured_at:
+        if self.previous_record is not None and self.measurement.measured_at <= self.previous_record.measured_at:
             return self.decisions.stop(Action.NO_CHANGE, "STALE_MEASUREMENT")
 
-        if self.dt_days is not None and self.dt_days < self.cfg.min_period_days:
-            self.ctx["dt_days"] = self.dt_days
+        if self.days_since_previous is not None and self.days_since_previous < self.config.min_period_days:
+            self.context["days_since_previous"] = self.days_since_previous
             return self.decisions.stop(Action.NO_CHANGE, "MEASUREMENT_TOO_SOON")
 
-        early = self.decisions.plausibility()
-        if early is not None:
-            return early
+        return self.decisions.plausibility()
 
-        return None
-
-    def _calculate_and_assign_prior(self):
-        prior = self.calculations.mer_prior(self.m.weight, self.profile)
-        self.ctx["prior_mer"] = prior
+    def _calculate_and_assign_prior(self) -> None:
+        """Prior = procjena potrošnje iz formule, prije nego što agent išta nauči o ovom psu."""
+        prior_mer = self.calculations.mer_prior(self.measurement.weight, self.profile)
+        self.context["prior_mer"] = prior_mer
         if self.learned.mer_estimate_kcal is None or self.learned.variance_kcal2 is None:
-            self.learned = self.estimator.init_learned(prior, self.learned)
+            self.learned = self.estimator.init_learned(prior_mer, self.learned)
 
     def _check_intake(self) -> CalorieAgentResponse | None:
-        it = self.request.intake
-        if it is None:
-            return None
-
-        coverage = it.days_covered / it.period_days if it.period_days > 0 else 0.0
-        if it.eaten_g_per_day is None or coverage < self.cfg.min_intake_coverage:
+        intake = self.request.intake
+        if intake is None:
             return self.decisions.stop(Action.NO_CHANGE, "NO_INTAKE_DATA")
 
-        if it.offered_g_per_day and it.offered_g_per_day > 0:
-            ratio = it.eaten_g_per_day / it.offered_g_per_day
-            self.diag["eaten_ratio"] = ratio
-            if ratio < self.cfg.appetite_ratio_threshold:
-                self.ctx["eaten_ratio"] = ratio
+        intake_coverage = intake.days_covered / intake.period_days if intake.period_days > 0 else 0.0
+        if intake.eaten_g_per_day is None or intake_coverage < self.config.min_intake_coverage:
+            return self.decisions.stop(Action.NO_CHANGE, "NO_INTAKE_DATA")
+
+        if intake.offered_g_per_day and intake.offered_g_per_day > 0:
+            eaten_to_offered_ratio = intake.eaten_g_per_day / intake.offered_g_per_day
+            self.diagnostics["eaten_ratio"] = eaten_to_offered_ratio
+            if eaten_to_offered_ratio < self.config.appetite_ratio_threshold:
+                self.context["eaten_ratio"] = eaten_to_offered_ratio
                 return self.decisions.stop(Action.ESCALATE, "REDUCED_APPETITE")
 
-        eaten_kcal = it.eaten_g_per_day * self.profile.food_kcal_per_gram
-        self.ctx["eaten_kcal"] = eaten_kcal
-        verdict = TickRequestValidator.intake_problem(eaten_kcal, self.calculations.rer(self.m.weight))
-        if verdict is not None:
-            return self.decisions.stop(Action.ESCALATE if verdict is Severity.ESCALATE else Action.NO_CHANGE, "INTAKE_IMPLAUSIBLE")
+        feeder_kcal = intake.eaten_g_per_day * self.profile.food_kcal_per_gram
+        self.context["eaten_kcal"] = feeder_kcal
+        intake_severity = TickRequestValidator.intake_problem(
+            feeder_kcal, self.calculations.rer(self.measurement.weight), self.config)
+        if intake_severity is not None:
+            action = Action.ESCALATE if intake_severity is Severity.ESCALATE else Action.NO_CHANGE
+            return self.decisions.stop(action, "INTAKE_IMPLAUSIBLE")
+
+        # Poslastice se računaju samo u energetski bilans (učenje), ne u provjere hranilice/apetita.
+        has_valid_treats = (intake.treat_kcal_per_day is not None
+                            and math.isfinite(intake.treat_kcal_per_day) and intake.treat_kcal_per_day > 0)
+        treat_kcal = intake.treat_kcal_per_day if has_valid_treats else 0.0
+        self.context["eaten_kcal"] = feeder_kcal + treat_kcal
+        self.diagnostics.update(feeder_kcal=feeder_kcal, treat_kcal=treat_kcal)
         return None
 
     def _learn(self) -> CalorieAgentResponse | None:
-        assert self.prev is not None and self.dt_days is not None
-        inn = self.estimator.innovation(self.learned, self.ctx["eaten_kcal"], self.prev.weight_kg, self.m.weight,
-                                   self.dt_days, self.sigma_w)
-        self.diag.update(innovation_kcal=inn.innovation, innovation_z=inn.z,
-                         predicted_dw_kg=inn.predicted_dw_kg, actual_dw_kg=inn.actual_dw_kg,
-                         observed_mer=inn.observed_mer)
-        self.ctx["z"] = inn.z
-        if abs(inn.z) > self.cfg.innovation_z_threshold:
-            bad = self.learned.consecutive_bad_weeks + 1
-            self.learned = replace(self.learned, consecutive_bad_weeks=bad)
-            if bad >= self.cfg.bad_weeks_before_escalation:
+        assert self.previous_record is not None and self.days_since_previous is not None
+        innovation = self.estimator.innovation(
+            self.learned, self.context["eaten_kcal"], self.previous_record.weight_kg, self.measurement.weight,
+            self.days_since_previous, self.weight_sigma_kg)
+        self.diagnostics.update(
+            innovation_kcal=innovation.innovation_kcal, innovation_z=innovation.z_score,
+            predicted_dw_kg=innovation.predicted_weight_change_kg, actual_dw_kg=innovation.actual_weight_change_kg,
+            observed_mer=innovation.observed_mer)
+        self.context["z"] = innovation.z_score
+
+        if abs(innovation.z_score) > self.config.innovation_z_threshold:
+            # "Loša sedmica": mjerenje je statistički nevjerovatno, pa se ne ugrađuje u procjenu.
+            consecutive_bad_weeks = self.learned.consecutive_bad_weeks + 1
+            self.learned = replace(self.learned, consecutive_bad_weeks=consecutive_bad_weeks)
+            if consecutive_bad_weeks >= self.config.bad_weeks_before_escalation:
                 return self.decisions.stop(Action.ESCALATE, "MODEL_MISMATCH_PERSISTENT")
             return self.decisions.stop(Action.NO_CHANGE, "MODEL_ERROR_LARGE")
-        self.learned = self.estimator.apply_update(self.learned, inn, self.m.measured_at)
-        mer_est = self.learned.mer_estimate_kcal
-        assert mer_est is not None
-        self.diag.update(mer_estimate_kcal=mer_est, mer_sd_kcal=math.sqrt(self.learned.variance_kcal2 or 0.0))
-        self.ctx["mer_est"] = mer_est
+
+        self.learned = self.estimator.apply_update(self.learned, innovation, self.measurement.measured_at)
+        mer_estimate = self.learned.mer_estimate_kcal
+        assert mer_estimate is not None
+        self.diagnostics.update(mer_estimate_kcal=mer_estimate,
+                                mer_sd_kcal=math.sqrt(self.learned.variance_kcal2 or 0.0))
+        self.context["mer_estimate"] = mer_estimate
         return None
 
     def _check_safety(self) -> CalorieAgentResponse | None:
-        mer_est = self.ctx["mer_est"]
-        prior = self.ctx["prior_mer"]
-        cls = self.ctx["cls"]
+        mer_estimate = self.context["mer_estimate"]
+        prior_mer = self.context["prior_mer"]
+        is_overweight = self.context["classification"].state is BodyState.OVERWEIGHT
+        weight_loss_code = "RAPID_LOSS_ON_DIET" if is_overweight else "UNEXPLAINED_WEIGHT_LOSS"
 
-        if abs(mer_est / prior - 1.0) > self.cfg.prior_deviation_max:
+        if abs(mer_estimate / prior_mer - 1.0) > self.config.prior_deviation_max:
             return self.decisions.stop(Action.ESCALATE, "ESTIMATE_FAR_FROM_PRIOR")
 
-        rows = [r.weight_kg for r in self.hist if r.bcs is None or r.bcs < self.cfg.bcs_high_min]
-        if len(rows) >= self.cfg.window_min_rows:
-            old = rows[: max(2, len(rows) - 1) // 2 + 1]
-            baseline = sum(old) / len(old)
-            recent_pts = [rows[-1], self.m.weight]
-            recent = sum(recent_pts) / len(recent_pts)
-            noise_kg = self.sigma_w * math.sqrt(1.0 / len(old) + 1.0 / len(recent_pts))
-            loss_kg = baseline - recent
-            pct = self.cfg.window_loss_pct_on_diet if cls.state is BodyState.OVERWEIGHT else self.cfg.window_loss_pct
-            limit_kg = max(pct / 100.0 * baseline, self.cfg.window_alarm_sigma * noise_kg)
-            self.diag.update(window_loss_kg=loss_kg, window_limit_kg=limit_kg)
-            if loss_kg > limit_kg:
-                self.ctx["slope"] = -loss_kg
-                return self.decisions.stop(Action.ESCALATE,
-                                  "RAPID_LOSS_ON_DIET" if cls.state is BodyState.OVERWEIGHT else "UNEXPLAINED_WEIGHT_LOSS")
+        # Prozor historije: ukupan gubitak preko više sedmica je otporniji na šum od nagiba.
+        # Redovi iz perioda debljine (visok BCS) se izostavljaju da uspješna dijeta ne izgleda kao gubitak.
+        window_records = [record for record in self.history
+                          if record.bcs is None or record.bcs < self.config.bcs_high_min]
+        window_weights = [record.weight_kg for record in window_records]
+        if len(window_weights) >= self.config.window_min_rows:
+            baseline_count = max(2, len(window_weights) - 1) // 2 + 1
+            baseline_weights = window_weights[:baseline_count]
+            baseline_weight = sum(baseline_weights) / len(baseline_weights)
+            recent_weights = [window_weights[-1], self.measurement.weight]
+            recent_weight = sum(recent_weights) / len(recent_weights)
+            # Šum razlike dva prosjeka težina.
+            noise_kg = self.weight_sigma_kg * math.sqrt(1.0 / len(baseline_weights) + 1.0 / len(recent_weights))
+            window_loss_kg = baseline_weight - recent_weight
+            window_loss_limit_pct = (self.config.window_loss_pct_on_diet if is_overweight
+                                     else self.config.window_loss_pct)
+            window_loss_limit_kg = max(window_loss_limit_pct / 100.0 * baseline_weight,
+                                       self.config.window_alarm_sigma * noise_kg)
+            self.diagnostics.update(window_loss_kg=window_loss_kg, window_limit_kg=window_loss_limit_kg)
+            if window_loss_kg > window_loss_limit_kg:
+                # context["slope"] je u kg/sedmici (kao i u trend grani), pa se gubitak prozora svodi na sedmicu.
+                baseline_time_s = sum(record.measured_at.timestamp()
+                                      for record in window_records[:baseline_count]) / baseline_count
+                recent_time_s = (window_records[-1].measured_at.timestamp()
+                                 + self.measurement.measured_at.timestamp()) / 2.0
+                window_span_weeks = max((recent_time_s - baseline_time_s) / self.SECONDS_PER_WEEK, 1.0)
+                self.context["slope"] = -window_loss_kg / window_span_weeks
+                return self.decisions.stop(Action.ESCALATE, weight_loss_code)
 
         trend = self._trend()
-        stable = True
-        self.ctx["stable"] = stable
+        is_stable = True
+        self.context["stable"] = is_stable
 
         if trend is not None:
-            self.diag.update(slope_kg_per_week=trend.slope_kg_per_week, slope_se=trend.se_kg_per_week)
-            self.ctx["slope"] = trend.slope_kg_per_week
-            stable = abs(trend.slope_kg_per_week) <= max(
-                self.cfg.stable_slope_pct_per_week / 100.0 * self.m.weight, self.cfg.stable_sigma * trend.se_kg_per_week)
-            pct = self.cfg.rapid_loss_pct_per_week if cls.state is BodyState.OVERWEIGHT else self.cfg.unexplained_loss_pct_per_week
+            self.diagnostics.update(slope_kg_per_week=trend.slope_kg_per_week, slope_se=trend.se_kg_per_week)
+            self.context["slope"] = trend.slope_kg_per_week
+            is_stable = abs(trend.slope_kg_per_week) <= max(
+                self.config.stable_slope_pct_per_week / 100.0 * self.measurement.weight,
+                self.config.stable_sigma * trend.se_kg_per_week)
+            self.context.update(stable=is_stable)
 
-            self.ctx.update(stable=stable)
-
-            if trend.slope_kg_per_week < -(pct / 100.0 * self.m.weight + self.cfg.trend_alarm_sigma * trend.se_kg_per_week):
-                code = "RAPID_LOSS_ON_DIET" if cls.state is BodyState.OVERWEIGHT else "UNEXPLAINED_WEIGHT_LOSS"
-                return self.decisions.stop(Action.ESCALATE, code)
+            trend_loss_limit_pct = (self.config.rapid_loss_pct_per_week if is_overweight
+                                    else self.config.unexplained_loss_pct_per_week)
+            loss_alarm_threshold = (trend_loss_limit_pct / 100.0 * self.measurement.weight
+                                    + self.config.trend_alarm_sigma * trend.se_kg_per_week)
+            if trend.slope_kg_per_week < -loss_alarm_threshold:
+                return self.decisions.stop(Action.ESCALATE, weight_loss_code)
 
         return None
 
     def _was_not_ideal(self) -> bool:
-        prev = self.prev
-        if prev is None:
+        """Pas je "upravo stigao na cilj" ako je prošli put imao neidealan BCS, a sada ima idealan."""
+        if self.previous_record is None:
             return False
-        return self.calculations.bcs_direction(prev.bcs) != 0
+        return (self.calculations.bcs_direction(self.previous_record.bcs) != 0
+                and self.calculations.bcs_direction(self.measurement.bcs) == 0)
 
     def _trend(self) -> Optional[Trend]:
-        m, cfg = self.m, self.cfg
-        recent = self.hist[-(cfg.trend_points - 1):]
-        pts = [((r.measured_at - m.measured_at).total_seconds() / (7 * 86400.0), r.weight_kg) for r in recent]
-        pts.append((0.0, m.weight))
-        return fit(pts, self.sigma_w)
+        recent_records = self.history[-(self.config.trend_points - 1):]
+        # Tačke (vrijeme u sedmicama u odnosu na trenutno mjerenje, težina u kg); prošlost je negativna.
+        weight_points = [((record.measured_at - self.measurement.measured_at).total_seconds() / self.SECONDS_PER_WEEK,
+                          record.weight_kg) for record in recent_records]
+        weight_points.append((0.0, self.measurement.weight))
+        return fit(weight_points, self.weight_sigma_kg)
 
-    def _is_ideal(self):
-        cls = self.ctx["cls"]
-        stable = self.ctx["stable"]
-        if cls.state is BodyState.IDEAL:
-            arrived = self._was_not_ideal()
-            self.diag["arrived_at_target"] = arrived
-            if stable and not arrived:
+    def _is_ideal(self) -> CalorieAgentResponse | None:
+        classification = self.context["classification"]
+        is_stable = self.context["stable"]
+        if classification.state is BodyState.IDEAL:
+            has_arrived_at_target = self._was_not_ideal()
+            self.diagnostics["arrived_at_target"] = has_arrived_at_target
+            if is_stable and not has_arrived_at_target:
                 self.learned = replace(self.learned, weeks_at_bound=0)
                 return self.decisions.stop(Action.NO_CHANGE, "IN_DEAD_ZONE")
-            if arrived:
-                self.reasons.append("TARGET_REACHED")
+            if has_arrived_at_target:
+                self.reason_codes.append("TARGET_REACHED")
         return None
 
-    def _regulate(self):
-        regulator = Regulator(self)
-        return regulator.regulate()
-
+    def _regulate(self) -> CalorieAgentResponse:
+        return Regulator(self).regulate()

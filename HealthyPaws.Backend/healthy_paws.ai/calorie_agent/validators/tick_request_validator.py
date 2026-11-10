@@ -13,106 +13,116 @@ from calorie_agent.validators.validation_issue import ValidationIssue
 class TickRequestValidator:
     @classmethod
     def first_blocking(cls, issues: tuple[ValidationIssue, ...]) -> Optional[ValidationIssue]:
-        return next((i for i in issues if i.severity is not Severity.WARN), None)
+        return next((issue for issue in issues if issue.severity is not Severity.WARN), None)
 
     @classmethod
-    def validate(cls, req: TickRequest, cfg: CalorieAgentConfig) -> tuple[ValidationIssue, ...]:
-        cls._req = req
-        cls._cfg = cfg
-        return *cls._measurement(), *cls._configuration(), *cls._history()
+    def validate(cls, request: TickRequest, config: CalorieAgentConfig) -> tuple[ValidationIssue, ...]:
+        return *cls._measurement(request, config), *cls._configuration(request, config), *cls._history(request, config)
 
     @classmethod
-    def _finite(cls, *xs: float) -> bool:
-        return all(math.isfinite(x) for x in xs)
+    def _finite(cls, *values: float) -> bool:
+        return all(math.isfinite(value) for value in values)
 
     @classmethod
-    def _measurement(cls) -> list[ValidationIssue]:
-        m, out = cls._req.measurement, []
-        cfg = cls._cfg
-        R = Severity.REMEASURE
-        if not cls._finite(m.weight, m.min_weight, m.max_weight):
-            out.append(ValidationIssue(R, "measurement", "težina nije konačan broj"))
-        elif m.weight <= 0:
-            out.append(ValidationIssue(R, "measurement.weight", "težina mora biti veća od 0"))
-        elif not cfg.weight_min_kg <= m.weight <= cfg.weight_max_kg:
-            out.append(ValidationIssue(R, "measurement.weight",
-                             f"{m.weight:g} kg je izvan vjerodostojnog opsega {cfg.weight_min_kg:g}-{cfg.weight_max_kg:g} kg",
-                             confirmable=True))
-        elif 0 < m.min_weight < m.max_weight and not (
-                m.min_weight / cfg.weight_vs_range_ratio <= m.weight <= m.max_weight * cfg.weight_vs_range_ratio):
-            out.append(ValidationIssue(R, "measurement.weight",
-                             f"težina {m.weight:g} kg je predaleko od raspona {m.min_weight:g}-{m.max_weight:g} kg",
-                             confirmable=True))
-        if m.bcs not in cfg.valid_bcs:
-            out.append(ValidationIssue(R, "measurement.bcs", f"BCS {m.bcs} nije u validnom opsegu"))
-        return out
+    def _measurement(cls, request: TickRequest, config: CalorieAgentConfig) -> list[ValidationIssue]:
+        measurement, issues = request.measurement, []
+        remeasure = Severity.REMEASURE
+        if not cls._finite(measurement.weight, measurement.min_weight, measurement.max_weight):
+            issues.append(ValidationIssue(remeasure, "measurement", "težina nije konačan broj"))
+        elif measurement.weight <= 0:
+            issues.append(ValidationIssue(remeasure, "measurement.weight", "težina mora biti veća od 0"))
+        elif not config.weight_min_kg <= measurement.weight <= config.weight_max_kg:
+            issues.append(ValidationIssue(
+                remeasure, "measurement.weight",
+                f"{measurement.weight:g} kg je izvan vjerodostojnog opsega "
+                f"{config.weight_min_kg:g}-{config.weight_max_kg:g} kg",
+                confirmable=True))
+        elif 0 < measurement.min_weight < measurement.max_weight and not (
+                measurement.min_weight / config.weight_vs_range_ratio
+                <= measurement.weight
+                <= measurement.max_weight * config.weight_vs_range_ratio):
+            issues.append(ValidationIssue(
+                remeasure, "measurement.weight",
+                f"težina {measurement.weight:g} kg je predaleko od raspona "
+                f"{measurement.min_weight:g}-{measurement.max_weight:g} kg",
+                confirmable=True))
+        if measurement.bcs not in config.valid_bcs:
+            issues.append(ValidationIssue(remeasure, "measurement.bcs", f"BCS {measurement.bcs} nije u validnom opsegu"))
+        return issues
 
     @classmethod
-    def _configuration(cls) -> list[ValidationIssue]:
-        req = cls._req
-        cfg = cls._cfg
+    def _configuration(cls, request: TickRequest, config: CalorieAgentConfig) -> list[ValidationIssue]:
+        measurement, profile, intake, issues = request.measurement, request.profile, request.intake, []
+        escalate = Severity.ESCALATE
 
-        m, p, it, out = req.measurement, req.profile, req.intake, []
-        E = Severity.ESCALATE
+        if cls._finite(measurement.min_weight, measurement.max_weight):
+            if measurement.min_weight <= 0 or measurement.min_weight >= measurement.max_weight:
+                issues.append(ValidationIssue(escalate, "measurement.minWeight/maxWeight",
+                                              "raspon težine (MinWeight/MaxWeight)"))
+            elif measurement.max_weight > config.range_max_ratio * measurement.min_weight:
+                issues.append(ValidationIssue(
+                    escalate, "measurement.minWeight/maxWeight",
+                    f"raspon težine je prešir ({measurement.min_weight:g}-{measurement.max_weight:g} kg)"))
 
-        if cls._finite(m.min_weight, m.max_weight):
-            if m.min_weight <= 0 or m.min_weight >= m.max_weight:
-                out.append(ValidationIssue(E, "measurement.minWeight/maxWeight", "raspon težine (MinWeight/MaxWeight)"))
-            else:
-                if m.max_weight > cfg.range_max_ratio * m.min_weight:
-                    out.append(ValidationIssue(E, "measurement.minWeight/maxWeight",
-                                     f"raspon težine je prešir ({m.min_weight:g}-{m.max_weight:g} kg)"))
+        food_kcal_per_gram = profile.food_kcal_per_gram
+        if not (math.isfinite(food_kcal_per_gram)
+                and config.food_kcal_min <= food_kcal_per_gram <= config.food_kcal_max):
+            issues.append(ValidationIssue(escalate, "profile.foodKcalPerGram", "kcal po gramu hrane"))
+        try:
+            activity_factor = float(profile.activity_factor)
+        except ValueError:
+            activity_factor = math.nan
+        if not (math.isfinite(activity_factor) and activity_factor in config.activity_factors):
+            issues.append(ValidationIssue(escalate, "profile.activityFactor", "faktor aktivnosti"))
 
-        if not (math.isfinite(p.food_kcal_per_gram) and cfg.food_kcal_min <= p.food_kcal_per_gram <= cfg.food_kcal_max):
-            out.append(ValidationIssue(E, "profile.foodKcalPerGram", "kcal po gramu hrane"))
-        if not (math.isfinite(float(p.activity_factor)) and float(p.activity_factor) in cfg.activity_factors):
-            out.append(ValidationIssue(E, "profile.activityFactor", "faktor aktivnosti"))
+        # current_daily_kcal == None znači "plan još nema dozu" (prvi tick); to nije greška.
+        plan = request.plan
+        if plan is not None and plan.current_daily_kcal is not None and (
+                not math.isfinite(plan.current_daily_kcal) or plan.current_daily_kcal <= 0):
+            issues.append(ValidationIssue(escalate, "plan.currentDailyKcal", "trenutni dnevni plan"))
 
-        if req.plan is not None and (not math.isfinite(req.plan.current_daily_kcal) or req.plan.current_daily_kcal <= 0):
-            out.append(ValidationIssue(E, "plan.currentDailyKcal", "trenutni dnevni plan"))
-
-        if it is not None:
-            for name, value in (("eatenGramsPerDay", it.eaten_g_per_day), ("offeredGramsPerDay", it.offered_g_per_day)):
-                if value is not None and (not math.isfinite(value) or value < 0):
-                    out.append(ValidationIssue(E, f"intake.{name}", "unos hranilice"))
-            if not (cls._finite(it.period_days, it.days_covered) and it.period_days >= 0
-                    and 0 <= it.days_covered <= it.period_days + cfg.days_covered_slack):
-                out.append(ValidationIssue(E, "intake.daysCovered/periodDays", "period unosa"))
-            elif (it.eaten_g_per_day is not None and it.offered_g_per_day and it.offered_g_per_day > 0
-                  and it.eaten_g_per_day > cfg.intake_over_offered_warn * it.offered_g_per_day):
-                out.append(ValidationIssue(Severity.WARN, "intake.eatenGramsPerDay",
-                                 "pojedeno je više od ponuđenog (poslastice ili greška senzora?)"))
-        return out
-
-    @classmethod
-    def _history(cls) -> list[ValidationIssue]:
-        req = cls._req
-        cfg = cls._cfg
-
-        out, seen = [], set()
-        now = req.measurement.measured_at
-        for i, r in enumerate(req.history):
-            if not (math.isfinite(r.weight_kg) and r.weight_kg > 0):
-                out.append(ValidationIssue(Severity.WARN, f"history[{i}].weightKg", "red se ignoriše: težina nije valjana"))
-            if r.measured_at >= now:
-                out.append(ValidationIssue(Severity.WARN, f"history[{i}].measuredAt", "red nije stariji od trenutnog mjerenja"))
-            if r.measured_at in seen:
-                out.append(ValidationIssue(Severity.WARN, f"history[{i}].measuredAt", "dupli datum u historiji"))
-            seen.add(r.measured_at)
-            if r.bcs not in cfg.valid_bcs:
-                out.append(ValidationIssue(Severity.WARN, f"history[{i}].bcs", f"BCS {r.bcs} nije u validnom opsegu"))
-        return out
+        if intake is not None:
+            for name, grams in (("eatenGramsPerDay", intake.eaten_g_per_day),
+                                ("offeredGramsPerDay", intake.offered_g_per_day)):
+                if grams is not None and (not math.isfinite(grams) or grams < 0):
+                    issues.append(ValidationIssue(escalate, f"intake.{name}", "unos hranilice"))
+            if not (cls._finite(intake.period_days, intake.days_covered) and intake.period_days >= 0
+                    and 0 <= intake.days_covered <= intake.period_days + config.days_covered_slack):
+                issues.append(ValidationIssue(escalate, "intake.daysCovered/periodDays", "period unosa"))
+            elif (intake.eaten_g_per_day is not None and intake.offered_g_per_day and intake.offered_g_per_day > 0
+                  and intake.eaten_g_per_day > config.intake_over_offered_warn * intake.offered_g_per_day):
+                issues.append(ValidationIssue(Severity.WARN, "intake.eatenGramsPerDay",
+                                              "pojedeno je više od ponuđenog (poslastice ili greška senzora?)"))
+        return issues
 
     @classmethod
-    def intake_problem(cls, eaten_kcal: float, rer_kcal: float) -> Optional[
-        Severity]:
-        cfg = cls._cfg
+    def _history(cls, request: TickRequest, config: CalorieAgentConfig) -> list[ValidationIssue]:
+        issues, seen_timestamps = [], set()
+        current_measured_at = request.measurement.measured_at
+        for index, record in enumerate(request.history):
+            if not (math.isfinite(record.weight_kg) and record.weight_kg > 0):
+                issues.append(ValidationIssue(Severity.WARN, f"history[{index}].weightKg",
+                                              "red se ignoriše: težina nije valjana"))
+            if record.measured_at >= current_measured_at:
+                issues.append(ValidationIssue(Severity.WARN, f"history[{index}].measuredAt",
+                                              "red nije stariji od trenutnog mjerenja"))
+            if record.measured_at in seen_timestamps:
+                issues.append(ValidationIssue(Severity.WARN, f"history[{index}].measuredAt",
+                                              "dupli datum u historiji"))
+            seen_timestamps.add(record.measured_at)
+            if record.bcs not in config.valid_bcs:
+                issues.append(ValidationIssue(Severity.WARN, f"history[{index}].bcs",
+                                              f"BCS {record.bcs} nije u validnom opsegu"))
+        return issues
 
+    @classmethod
+    def intake_problem(cls, eaten_kcal: float, rer_kcal: float, config: CalorieAgentConfig) -> Optional[Severity]:
+        """Odnos pojedenih kcal i RER-a: previsok (kvar senzora) daje WARN, prenizak (nevjerodostojno) ESCALATE."""
         if rer_kcal <= 0:
             return None
-        ratio = eaten_kcal / rer_kcal
-        if ratio > cfg.intake_rer_max:
+        eaten_to_rer_ratio = eaten_kcal / rer_kcal
+        if eaten_to_rer_ratio > config.intake_rer_max:
             return Severity.WARN
-        if ratio < cfg.intake_rer_min:
+        if eaten_to_rer_ratio < config.intake_rer_min:
             return Severity.ESCALATE
         return None

@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
 
 
-def _opt(msg, field: str):
-    return getattr(msg, field) if msg.HasField(field) else None
+def optional_field(message, field_name: str):
+    """Vrijednost proto3 `optional` polja, ili None ako nije eksplicitno postavljeno."""
+    return getattr(message, field_name) if message.HasField(field_name) else None
 
 
-def _dt(ts) -> datetime:
-    return ts.ToDatetime(tzinfo=timezone.utc)
+def to_utc_datetime(timestamp) -> datetime:
+    return timestamp.ToDatetime(tzinfo=timezone.utc)

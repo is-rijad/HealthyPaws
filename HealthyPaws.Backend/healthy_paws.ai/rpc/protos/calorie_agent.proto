@@ -37,6 +37,7 @@ message IntakeSummary {
   optional double offered_g_per_day = 2;
   double days_covered = 3;
   double period_days = 4;
+  optional double treat_kcal_per_day = 5;
 }
 
 message DogProfile {

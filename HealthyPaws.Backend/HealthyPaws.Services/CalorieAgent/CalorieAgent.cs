@@ -1,10 +1,12 @@
 using System.Globalization;
 using CalorieAgent;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using Grpc.Net.Client;
 using HealhtyPaws.Models.Responses.Calorie;
-using HealhtyPaws.Models.Responses.Dog;
 using HealthyPaws.Database;
+using HealthyPaws.Database.Entity;
 using HealthyPaws.Database.Entity.CalorieAgent;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.Exceptions;
@@ -15,14 +17,12 @@ using HealthyPaws.Services.TreatLog;
 using Mapster.Utils;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
 using Action = CalorieAgent.Action;
 using LearnedState = CalorieAgent.LearnedState;
 
 namespace HealthyPaws.Services.CalorieAgent;
 
 public class CalorieAgentService(HealthyPawsDbContext dbContext,
-    IMapper mapper, 
     INotificationService notificationService, 
     ITreatLogService treatLogService,
     AuthorizationService authorizationService,
@@ -35,21 +35,41 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
         using var channel = GrpcChannel.ForAddress(_rpcUrl);
         var client = new global::CalorieAgent.CalorieAgent.CalorieAgentClient(channel);
         var request = await PrepareRequest(dog, weight);
-        var response = await client.TickAsync(request);
+        CalorieAgentResponse response;
+        try
+        {
+            response = await client.TickAsync(request);
+        }
+        catch (RpcException)
+        {
+            throw new BadRequestException("Kalorijski agent trenutno nije dostupan!");
+        }
         await HandleResponse(response);
-        return response;    
+        return response;
     }
 
     private async Task<CalorieAgentRequest> PrepareRequest(Database.Entity.Dog dog, Database.Entity.DogWeight weight)
     {
-        var dogWeights =  await dbContext.DogWeights.Where(d => d.DogId == dog.Id).OrderBy(d => d.CreatedAt).Skip(1).Take(8).ToListAsync();
-        var breed = await dbContext.Breeds.SingleAsync(b => b.Id == dog.BreedId);
-        var plan = await dbContext.DogPlans.Where(p => p.DogId == dog.Id).OrderByDescending(p => p.PlanVersion)
+        var rejectedMeasurementSeconds = (await dbContext.AgentDecisionLogs
+                .Where(log => log.DogId == dog.Id && log.IsRejected)
+                .Select(log => log.MeasuredAt)
+                .ToListAsync())
+            .Select(measuredAt => measuredAt.ToUnixTimeSeconds())
+            .ToHashSet();
+        var historyWeights = (await dbContext.DogWeights.Where(w => w.DogId == dog.Id).Where(w => w.Id != weight.Id)
+                .OrderByDescending(w => w.CreatedAt).Take(8 + rejectedMeasurementSeconds.Count).ToListAsync())
+            .Where(w => !rejectedMeasurementSeconds.Contains(w.CreatedAt.ToUniversalTime().ToTimestamp().Seconds))
+            .Take(8)
+            .ToList();
+        historyWeights.Reverse();
+        var breed = await dbContext.Breeds.SingleAsync(dogBreed => dogBreed.Id == dog.BreedId);
+        var plan = await dbContext.DogPlans.Where(dogPlan => dogPlan.DogId == dog.Id).OrderByDescending(dogPlan => dogPlan.PlanVersion)
             .Include(dogPlan => dogPlan.Learned).FirstOrDefaultAsync();
-        var learned = plan?.Learned;
-        var feedingRecords = plan != null
-            ? await dbContext.FeedingRecords.Where(fr => fr.PlanId == plan.DogId).GroupBy(fr => fr.EatenAt.Day).ToListAsync()
-            : new();
+        var learnedState = plan?.Learned;
+        // Plan bez doze (DailyKcal <= 0, npr. kreiran uz prvo odbijeno mjerenje) tretira se kao "plan još ne postoji".
+        var hasPlan = plan is { DailyKcal: > 0 };
+        var feedingPeriod = await GetFeedingPeriod(dog.Id, hasPlan ? plan : null, weight);
+        var (feedingByDay, periodDays) = (feedingPeriod.ByDay, feedingPeriod.PeriodDays);
         
         var request = new CalorieAgentRequest
         {
@@ -62,7 +82,7 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
                 Weight = weight.Weight,
                 MaxWeight = (double)breed.MaxWeight,
                 MinWeight = (double)breed.MinWeight,
-                MeasuredAt = weight.CreatedAt.ToTimestamp()
+                MeasuredAt = weight.CreatedAt.ToUniversalTime().ToTimestamp()
             },
             Profile = new DogProfile()
             {
@@ -76,93 +96,104 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
                 ? null
                 : new PlanState()
                 {
-                    CurrentDailyKcal = plan.DailyKcal,
-                    PlanVersion = ++plan.PlanVersion,
-                    Learned = learned == null
+                    PlanVersion = plan.PlanVersion,
+                    Learned = learnedState == null
                         ? null
                         : new LearnedState()
                         {
-                            ConsecutiveBadWeeks = learned.ConsecutiveBadWeeks,
-                            LastUpdateAt = learned.LastUpdateAt?.ToTimestamp(),
-                            NUpdates = learned.NUpdates,
-                            WeeksAtBound = learned.WeeksAtBound,
+                            ConsecutiveBadWeeks = learnedState.ConsecutiveBadWeeks,
+                            LastUpdateAt = learnedState.LastUpdateAt?.ToTimestamp(),
+                            NUpdates = learnedState.NUpdates,
+                            WeeksAtBound = learnedState.WeeksAtBound,
                         }
                 },
-            Intake = plan == null
+            Intake = !hasPlan
                 ? null
                 : new IntakeSummary()
                 {
-                    DaysCovered = feedingRecords.Count, // TODO: use real days covered
-                    EatenGPerDay = feedingRecords.Count > 0 ? feedingRecords.Average(it => it.Sum(i => i.EatenG)) : 0,
-                    OfferedGPerDay = plan.DailyGrams,
-                    PeriodDays = feedingRecords.Count,
+                    DaysCovered = Math.Min(feedingByDay.Count, periodDays),
+                    OfferedGPerDay = plan!.DailyGrams,
+                    PeriodDays = periodDays,
                 }
         };
-        if (request.Plan != null && learned != null)
+        if (hasPlan)
+            request.Plan?.CurrentDailyKcal = plan!.DailyKcal;
+        if (request.Intake != null && feedingByDay.Count > 0)
+            request.Intake.EatenGPerDay = feedingByDay.Average(day => day.Sum(feedingRecord => feedingRecord.EatenG));
+        if (request.Intake != null)
         {
-            if (learned.MerEstimateKcal.HasValue)
-                request.Plan.Learned.MerEstimateKcal = learned.MerEstimateKcal.Value;
-            if (learned.PendingWeightKg.HasValue)
-                request.Plan.Learned.PendingWeightKg = learned.PendingWeightKg.Value;
-            if (learned.VarianceKcal2.HasValue)
-                request.Plan.Learned.VarianceKcal2 = learned.VarianceKcal2.Value;
+            var treatKcalInPeriod = await treatLogService.GetTreatCaloriesAsync(dog.Id,
+                DateTime.SpecifyKind(feedingPeriod.Start, DateTimeKind.Utc), DateTime.SpecifyKind(feedingPeriod.End, DateTimeKind.Utc));
+            if (treatKcalInPeriod > 0)
+                request.Intake.TreatKcalPerDay = treatKcalInPeriod / periodDays;
         }
-        if (dogWeights.Count > 0)
+        if (request.Plan != null && learnedState != null)
         {
-            foreach (var dogWeight in dogWeights)
+            if (learnedState.MerEstimateKcal.HasValue)
+                request.Plan.Learned.MerEstimateKcal = learnedState.MerEstimateKcal.Value;
+            if (learnedState.PendingWeightKg.HasValue)
+                request.Plan.Learned.PendingWeightKg = learnedState.PendingWeightKg.Value;
+            if (learnedState.VarianceKcal2.HasValue)
+                request.Plan.Learned.VarianceKcal2 = learnedState.VarianceKcal2.Value;
+        }
+        if (historyWeights.Count > 0)
+        {
+            foreach (var historyWeight in historyWeights)
             {
-                request.History.Add(new WeekRecord()
+                var weekRecord = new WeekRecord()
                 {
-                  Bcs  =  dogWeight.Bcs,
-                  MeasuredAt = dogWeight.CreatedAt.ToUniversalTime().ToTimestamp(),
-                  WeightKg =  dogWeight.Weight,
-                  EatenGPerDay = dogWeight.EatenGPerDay!.Value,
-                  OfferedGPerDay = dogWeight.OfferedGPerDay!.Value
-                });
+                    Bcs = historyWeight.Bcs,
+                    MeasuredAt = historyWeight.CreatedAt.ToTimestamp(),
+                    WeightKg = historyWeight.Weight,
+                };
+                if (historyWeight.EatenGPerDay.HasValue) weekRecord.EatenGPerDay = historyWeight.EatenGPerDay.Value;
+                if (historyWeight.OfferedGPerDay.HasValue) weekRecord.OfferedGPerDay = historyWeight.OfferedGPerDay.Value;
+                request.History.Add(weekRecord);
             }
         }
         return request;
     }
 
-    private async Task<AgentOutcome> HandleResponse(CalorieAgentResponse d)
+    private async Task<AgentOutcome> HandleResponse(CalorieAgentResponse response)
     {
-        var measuredAt = DateTimeOffset.FromUnixTimeSeconds(d.MeasuredAt.Seconds);
+        var measuredAt = DateTimeOffset.FromUnixTimeSeconds(response.MeasuredAt.Seconds);
         
-        if (await dbContext.AgentDecisionLogs.AnyAsync(x => x.DogId == d.DogId && x.MeasuredAt == measuredAt))
+        if (await dbContext.AgentDecisionLogs.AnyAsync(log => log.DogId == response.DogId && log.MeasuredAt == measuredAt))
         {
             return AgentOutcome.Duplicate;
         }
 
         var plan = await dbContext.DogPlans.Include(dogPlan => dogPlan.Learned)
-            .SingleOrDefaultAsync(p => p.DogId == d.DogId);
+            .SingleOrDefaultAsync(dogPlan => dogPlan.DogId == response.DogId);
 
         if (plan is null)
         {
-            plan = new DogPlan() { DogId = d.DogId };
+            plan = new DogPlan() { DogId = response.DogId };
             await dbContext.DogPlans.AddAsync(plan);
         }
 
         AgentOutcome outcome;
         Alert? newAlert = null;
 
-        if (plan.LastAppliedMeasuredAt is { } last && measuredAt <= last)
+        if (plan.LastAppliedMeasuredAt is { } lastAppliedAt && measuredAt <= lastAppliedAt)
         {
             outcome = AgentOutcome.Stale;
         }
         else
         {
-            plan.Learned = d.Learned.ToEntity();
+            if (plan.Learned is null) plan.Learned = response.Learned.ToEntity();
+            else plan.Learned.CopyFrom(response.Learned);
             plan.LastAppliedMeasuredAt = measuredAt;
-            plan.NextMeasureAt = d.NextEvaluationAt.ToDateTime();
+            plan.NextMeasureAt = response.NextEvaluationAt.ToDateTime();
 
-            if (!d.PlanChanged)
+            if (!response.PlanChanged)
             {
                 outcome = AgentOutcome.NoPlanChange;
             }
-            else if (d.PlanVersion == plan.PlanVersion && d.NewDailyKcal is { } kcal)
+            else if (response.PlanVersion == plan.PlanVersion && response.NewDailyKcal is { } newDailyKcal)
             {
-                plan.DailyKcal = kcal;
-                plan.DailyGrams = d.NewDailyGrams;
+                plan.DailyKcal = newDailyKcal;
+                plan.DailyGrams = response.NewDailyGrams;
                 plan.PlanVersion++;
                 outcome = AgentOutcome.PlanApplied;
             }
@@ -171,54 +202,100 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
                 outcome = AgentOutcome.PlanVersionMismatch;
             }
 
-            newAlert = await UpdateAlertsAsync(d, measuredAt);
+            newAlert = await UpdateAlertsAsync(response, measuredAt);
         }
 
         await dbContext.AgentDecisionLogs.AddAsync(new AgentDecisionLog
         {
-            DogId = d.DogId,
+            DogId = response.DogId,
             MeasuredAt = measuredAt,
-            CorrelationId = d.CorrelationId,
-            Action = Enum<AgentAction>.Parse(d.Action.ToString()),
+            CorrelationId = response.CorrelationId,
+            Action = Enum<AgentAction>.Parse(response.Action.ToString()),
             Outcome = outcome,
-            ReasonCodes = string.Join(",", d.ReasonCodes),
-            Explanation = d.Explanation,
-            NewDailyKcal = d.NewDailyKcal,
-            NewDailyGrams = d.NewDailyGrams,
-            PlanVersionInResponse = d.PlanVersion,
+            ReasonCodes = Truncate(string.Join(",", response.ReasonCodes), AgentDecisionLogEntityConfiguration.ReasonCodesMaxLength),
+            Explanation = Truncate(response.Explanation, AgentDecisionLogEntityConfiguration.ExplanationMaxLength),
+            RequiresHumanReview = response.RequiresHumanReview,
+            Diagnostics = response.Diagnostics is null ? null : JsonFormatter.Default.Format(response.Diagnostics),
+            NewDailyKcal = response.NewDailyKcal,
+            NewDailyGrams = response.NewDailyGrams,
+            PlanVersionInResponse = response.PlanVersion,
             ReceivedAt = DateTimeOffset.UtcNow,
-            IsRejected = outcome != AgentOutcome.Stale && d.Action == Action.RequestRemeasure
+            IsRejected = outcome != AgentOutcome.Stale && response.Action == Action.RequestRemeasure
         });
 
-        await dbContext.SaveChangesAsync();
+        try
+        {
+            await dbContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            if (await LogExistsAfterReset(response.DogId, measuredAt))
+                return AgentOutcome.Duplicate;
+            throw;
+        }
         
-        if (newAlert is not null) await notificationService.SendAlertAsync(newAlert, d);
+        if (newAlert is not null) await notificationService.SendAlertAsync(newAlert, response);
 
         return outcome;
     }
-    
-    private async Task<Alert?> UpdateAlertsAsync(CalorieAgentResponse d, DateTimeOffset at)
+
+    private async Task<bool> LogExistsAfterReset(int dogId, DateTimeOffset measuredAt)
     {
-        if (d.Action == Action.Escalate)
+        dbContext.ChangeTracker.Clear();
+        return await dbContext.AgentDecisionLogs.AnyAsync(log => log.DogId == dogId && log.MeasuredAt == measuredAt);
+    }
+
+    private static string Truncate(string value, int maxLength) =>
+        value.Length <= maxLength ? value : value[..maxLength];
+
+    private sealed record FeedingPeriod(
+        List<IGrouping<DateTime, FeedingRecord>> ByDay, int PeriodDays, DateTime Start, DateTime End);
+
+    private async Task<FeedingPeriod> GetFeedingPeriod(int dogId, DogPlan? plan, Database.Entity.DogWeight weight)
+    {
+        const int defaultPeriodDays = 7;
+        var periodEnd = weight.CreatedAt;
+        if (plan is null)
+            return new FeedingPeriod([], defaultPeriodDays, periodEnd.AddDays(-defaultPeriodDays), periodEnd);
+        var lastEvaluationAt = await dbContext.AgentDecisionLogs
+            .Where(log => log.DogId == dogId && log.Outcome != AgentOutcome.Stale)
+            .OrderByDescending(log => log.MeasuredAt)
+            .Select(log => (DateTimeOffset?)log.MeasuredAt)
+            .FirstOrDefaultAsync();
+        var periodStart = lastEvaluationAt is { } lastEvaluation && lastEvaluation.UtcDateTime < periodEnd
+            ? lastEvaluation.UtcDateTime
+            : periodEnd.AddDays(-defaultPeriodDays);
+        var periodDays = Math.Max(1, (int)Math.Ceiling((periodEnd - periodStart).TotalDays));
+        var byDay = (await dbContext.FeedingRecords
+                .Where(feedingRecord => feedingRecord.PlanId == plan.Id && feedingRecord.EatenAt > periodStart && feedingRecord.EatenAt <= periodEnd)
+                .ToListAsync())
+            .GroupBy(feedingRecord => feedingRecord.EatenAt.Date)
+            .ToList();
+        return new FeedingPeriod(byDay, periodDays, periodStart, periodEnd);
+    }
+    
+    private async Task<Alert?> UpdateAlertsAsync(CalorieAgentResponse response, DateTimeOffset occurredAt)
+    {
+        if (response.Action == Action.Escalate)
         {
-            var reason = d.ReasonCodes.FirstOrDefault() ?? "UNKNOWN";
-            var open = await dbContext.Alerts.FirstOrDefaultAsync(a => a.DogId == d.DogId && a.Reason == reason && a.ResolvedAt == null);
-            if (open is not null)
+            var reason = response.ReasonCodes.FirstOrDefault() ?? "UNKNOWN";
+            var openAlert = await dbContext.Alerts.FirstOrDefaultAsync(alert => alert.DogId == response.DogId && alert.Reason == reason && alert.ResolvedAt == null);
+            if (openAlert is not null)
             {
-                open.LastSeenAt = at;
-                open.Occurrences++;
-                open.Explanation = d.Explanation;
+                openAlert.LastSeenAt = occurredAt;
+                openAlert.Occurrences++;
+                openAlert.Explanation = response.Explanation;
                 return null;
             }
-            var created = new Alert { DogId = d.DogId, Reason = reason, Explanation = d.Explanation, FirstSeenAt = at, LastSeenAt = at };
-            await dbContext.Alerts.AddAsync(created);
-            return created;
+            var newAlert = new Alert { DogId = response.DogId, Reason = reason, Explanation = response.Explanation, FirstSeenAt = occurredAt, LastSeenAt = occurredAt };
+            await dbContext.Alerts.AddAsync(newAlert);
+            return newAlert;
         }
 
-        if (d.Action != Action.RequestRemeasure)
+        if (response.Action != Action.RequestRemeasure)
         {
-            var open = await dbContext.Alerts.Where(a => a.DogId == d.DogId && a.ResolvedAt == null).ToListAsync();
-            foreach (var a in open) { a.ResolvedAt = at; a.ResolvedBy = AlertResolvedBy.Agent; }
+            var openAlerts = await dbContext.Alerts.Where(alert => alert.DogId == response.DogId && alert.ResolvedAt == null).ToListAsync();
+            foreach (var alert in openAlerts) { alert.ResolvedAt = occurredAt; alert.ResolvedBy = AlertResolvedBy.Agent; }
         }
         return null;
     }
@@ -226,12 +303,12 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
     public async Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to)
     {
         var userId = authorizationService.GetUserId();
-        if (!await dbContext.UserDevices.AnyAsync(ud => ud.UserId == userId && ud.Device!.DogId == dogId))
+        if (!await dbContext.UserDevices.AnyAsync(userDevice => userDevice.UserId == userId && userDevice.Device!.DogId == dogId))
             throw new NotFoundException("Nije pronađeno!");
 
-        var dog = await dbContext.Dogs.AsNoTracking().FirstAsync(d => d.Id == dogId);
+        var dog = await dbContext.Dogs.AsNoTracking().FirstAsync(dogEntity => dogEntity.Id == dogId);
         var treatCalories = await treatLogService.GetTreatCaloriesAsync(dogId, from, to);
-        var plan = await dbContext.DogPlans.AsNoTracking().SingleAsync(p => p.DogId == dogId);
+        var plan = await dbContext.DogPlans.AsNoTracking().SingleAsync(dogPlan => dogPlan.DogId == dogId);
         var eatenToday = await feedingService.CalculateEatenToday(dog.Id);
         
         return new CalorieBudgetResponse(dogId, Math.Round(plan.DailyKcal, 1), treatCalories, eatenToday);
