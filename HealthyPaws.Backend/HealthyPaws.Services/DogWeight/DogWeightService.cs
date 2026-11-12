@@ -74,11 +74,6 @@ public class DogWeightService(HealthyPawsDbContext dbContext,
         var dogId = request.DogId.Value;
         await EnsureOwnedAsync(dogId);
         
-        var plan = await dbContext.DogPlans.SingleAsync(w => w.DogId == dogId);
-        
-        if ((request.CreatedAt ?? DateTime.UtcNow) < plan.NextMeasureAt)
-            throw new BadRequestException("Mjerenje ne može biti prije narednog zakazanog (svako 7 dana)!");
-
         if (request.CreatedAt == null)
             return;
         var createdAt = request.CreatedAt.Value.ToUniversalTime();

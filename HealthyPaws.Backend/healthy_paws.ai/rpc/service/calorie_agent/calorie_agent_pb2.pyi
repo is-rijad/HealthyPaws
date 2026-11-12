@@ -131,7 +131,7 @@ class CalorieAgentRequest(_message.Message):
     def __init__(self, correlation_id: _Optional[str] = ..., measurement: _Optional[_Union[Measurement, _Mapping]] = ..., history: _Optional[_Iterable[_Union[WeekRecord, _Mapping]]] = ..., intake: _Optional[_Union[IntakeSummary, _Mapping]] = ..., profile: _Optional[_Union[DogProfile, _Mapping]] = ..., plan: _Optional[_Union[PlanState, _Mapping]] = ...) -> None: ...
 
 class CalorieAgentResponse(_message.Message):
-    __slots__ = ("dog_id", "measured_at", "correlation_id", "plan_version", "action", "plan_changed", "new_daily_kcal", "new_daily_grams", "reason_codes", "explanation", "requires_human_review", "next_evaluation_at", "learned", "diagnostics")
+    __slots__ = ("dog_id", "measured_at", "correlation_id", "plan_version", "action", "plan_changed", "new_daily_kcal", "new_daily_grams", "reason_codes", "explanation", "requires_human_review", "next_evaluation_at", "learned", "diagnostics", "has_error")
     DOG_ID_FIELD_NUMBER: _ClassVar[int]
     MEASURED_AT_FIELD_NUMBER: _ClassVar[int]
     CORRELATION_ID_FIELD_NUMBER: _ClassVar[int]
@@ -146,6 +146,7 @@ class CalorieAgentResponse(_message.Message):
     NEXT_EVALUATION_AT_FIELD_NUMBER: _ClassVar[int]
     LEARNED_FIELD_NUMBER: _ClassVar[int]
     DIAGNOSTICS_FIELD_NUMBER: _ClassVar[int]
+    HAS_ERROR_FIELD_NUMBER: _ClassVar[int]
     dog_id: int
     measured_at: _timestamp_pb2.Timestamp
     correlation_id: str
@@ -160,4 +161,5 @@ class CalorieAgentResponse(_message.Message):
     next_evaluation_at: _timestamp_pb2.Timestamp
     learned: LearnedState
     diagnostics: _struct_pb2.Struct
-    def __init__(self, dog_id: _Optional[int] = ..., measured_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., correlation_id: _Optional[str] = ..., plan_version: _Optional[int] = ..., action: _Optional[_Union[Action, str]] = ..., plan_changed: _Optional[bool] = ..., new_daily_kcal: _Optional[float] = ..., new_daily_grams: _Optional[float] = ..., reason_codes: _Optional[_Iterable[str]] = ..., explanation: _Optional[str] = ..., requires_human_review: _Optional[bool] = ..., next_evaluation_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., learned: _Optional[_Union[LearnedState, _Mapping]] = ..., diagnostics: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...) -> None: ...
+    has_error: bool
+    def __init__(self, dog_id: _Optional[int] = ..., measured_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., correlation_id: _Optional[str] = ..., plan_version: _Optional[int] = ..., action: _Optional[_Union[Action, str]] = ..., plan_changed: _Optional[bool] = ..., new_daily_kcal: _Optional[float] = ..., new_daily_grams: _Optional[float] = ..., reason_codes: _Optional[_Iterable[str]] = ..., explanation: _Optional[str] = ..., requires_human_review: _Optional[bool] = ..., next_evaluation_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., learned: _Optional[_Union[LearnedState, _Mapping]] = ..., diagnostics: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., has_error: _Optional[bool] = ...) -> None: ...

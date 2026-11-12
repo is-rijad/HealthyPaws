@@ -18,9 +18,10 @@ class Decisions:
 
     def stop(self, action: Action, *reason_codes: str) -> CalorieAgentResponse:
         self.agent.reason_codes.extend(reason_codes)
-        return self.finish(action)
+        return self.finish(action, has_error=True)
 
-    def finish(self, action: Action, *, kcal: Optional[float] = None) -> CalorieAgentResponse:
+    def finish(self, action: Action, *, kcal: Optional[float] = None,
+               has_error: Optional[bool] = None) -> CalorieAgentResponse:
         agent = self.agent
         daily_kcal = agent.plan.current_daily_kcal if kcal is None and agent.plan is not None else kcal
 
@@ -53,6 +54,7 @@ class Decisions:
             next_evaluation_at=agent.measurement.measured_at + timedelta(days=agent.config.next_evaluation_days),
             learned=agent.learned.to_pb2(),
             diagnostics=agent.diagnostics,
+            has_error=has_error if has_error is not None else False,
         )
 
     def confirm_or_remeasure(self) -> CalorieAgentResponse:

@@ -20,6 +20,8 @@ public static class ServicesConfiguration
         services.AddScoped<AuthorizationService>();
         services.AddScoped<TokenManager>();
 
+        services.AddSingleton<RpcClient.RpcClient>();
+
         services.AddScoped<IUserService, UserService>();
 
         services.AddScoped<IDogService, DogService>();

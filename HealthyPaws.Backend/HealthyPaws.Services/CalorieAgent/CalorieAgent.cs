@@ -3,7 +3,6 @@ using CalorieAgent;
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Net.Client;
 using HealhtyPaws.Models.Responses.Calorie;
 using HealthyPaws.Database;
 using HealthyPaws.Database.Entity;
@@ -15,7 +14,6 @@ using HealthyPaws.Services.Mapster;
 using HealthyPaws.Services.Notifications;
 using HealthyPaws.Services.TreatLog;
 using Mapster.Utils;
-using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
 using Action = CalorieAgent.Action;
 using LearnedState = CalorieAgent.LearnedState;
@@ -23,26 +21,28 @@ using LearnedState = CalorieAgent.LearnedState;
 namespace HealthyPaws.Services.CalorieAgent;
 
 public class CalorieAgentService(HealthyPawsDbContext dbContext,
-    INotificationService notificationService, 
+    INotificationService notificationService,
     ITreatLogService treatLogService,
     AuthorizationService authorizationService,
-    IFeedingService feedingService) : ICalorieAgentService
+    IFeedingService feedingService,
+    RpcClient.RpcClient rpcClient) : ICalorieAgentService
 {
-    private readonly string _rpcUrl = Environment.GetEnvironmentVariable("Rpc_Url") ?? throw new ArgumentException("Rpc_Url is not set!");
-
     public async Task<CalorieAgentResponse> TickAsync(Database.Entity.Dog dog, Database.Entity.DogWeight weight)
     {
-        using var channel = GrpcChannel.ForAddress(_rpcUrl);
-        var client = new global::CalorieAgent.CalorieAgent.CalorieAgentClient(channel);
+        var client = new global::CalorieAgent.CalorieAgent.CalorieAgentClient(rpcClient.Channel);
         var request = await PrepareRequest(dog, weight);
         CalorieAgentResponse response;
         try
         {
             response = await client.TickAsync(request);
+            if (response.HasError)
+            {
+                throw new BadRequestException(response.Explanation);
+            }
         }
-        catch (RpcException)
+        catch (RpcException e)
         {
-            throw new BadRequestException("Kalorijski agent trenutno nije dostupan!");
+            throw new Exception(e.Message, e);
         }
         await HandleResponse(response);
         return response;
@@ -312,5 +312,15 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
         var eatenToday = await feedingService.CalculateEatenToday(dog.Id);
         
         return new CalorieBudgetResponse(dogId, Math.Round(plan.DailyKcal, 1), treatCalories, eatenToday);
+    }
+
+    public void Dispose()
+    {
+        dbContext.Dispose();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await dbContext.DisposeAsync();
     }
 }

@@ -88,6 +88,7 @@ message CalorieAgentResponse {
   google.protobuf.Timestamp next_evaluation_at = 12;
   LearnedState learned = 13;
   google.protobuf.Struct diagnostics = 14;
+  bool has_error = 15;
 }
 
 service CalorieAgent {
