@@ -13,7 +13,7 @@ public class DeviceInsertRequest
     public DogInsertRequest? Dog { get; set; }
     public DogWeightInsertRequest? DogWeight { get; set; }
 
-    /// <summary>Okvirna vremena obroka psa tokom dana (1-5), obavezno uz novog psa.</summary>
-    [MaxLength(5)]
+    [MaxLength(4)]
+    [MinLength(1)]
     public List<TimeOnly>? MealTimes { get; set; }
 }

@@ -1,3 +1,4 @@
-pika
+aio-pika
 grpcio
 grpcio-tools
+numpy

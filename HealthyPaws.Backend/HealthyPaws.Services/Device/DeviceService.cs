@@ -20,7 +20,7 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
         await BeforeInsert(request);
 
         var dog = (await dbContext.Devices.Include(d => d.Dog).FirstOrDefaultAsync(d => d.MacAddress == request.MacAddress))?.Dog;
-        if (request.Dog != null && request.DogWeight != null)
+        if (request.Dog != null && request.DogWeight != null && request.MealTimes != null)
         {
             dog = mapper.Map<Database.Entity.Dog>(request.Dog);
             await dbContext.Dogs.AddAsync(dog);
@@ -33,12 +33,14 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
             await calorieAgentService.TickAsync(dog, dogWeightInsertRequest);
             
             await dbContext.DogWeights.AddAsync(dogWeightInsertRequest);
-            
-            await dbContext.DogMeals.AddRangeAsync(request.MealTimes!.Select(t => new Database.Entity.DogMeal
-            {
-                DogId = dog.Id,
-                Time = t
-            }));
+
+            await dbContext.DogMeals.AddRangeAsync(request.MealTimes.OrderBy(it => it).Select((t, i) =>
+                new Database.Entity.DogMeal
+                {
+                    DogId = dog.Id,
+                    Time = t,
+                    MealIndex = (short)i
+                }));
             await dbContext.SaveChangesAsync();
         }
 
@@ -64,6 +66,11 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
 
         await PrepareForResponse(entityEntry.Entity, dbContext);
         return MapToResponseModel<DeviceResponse>(entityEntry.Entity, mapper);
+    }
+
+    public async Task<string> GetDeviceMac(int dogId)
+    {
+        return (await dbContext.Devices.SingleAsync(it => it.DogId == dogId)).MacAddress;
     }
 
     public override async Task<IQueryable<Database.Entity.Device>> ApplyFilter(IQueryable<Database.Entity.Device> queryable, DeviceSearchObject searchObject)

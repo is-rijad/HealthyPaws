@@ -22,6 +22,108 @@ namespace HealthyPaws.Database.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Bandit.BanditDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("Arm")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("AvgEatenFraction")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("BaselineHour")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset>("BaselineUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ChosenAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("ChosenByFallback")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ContextSavedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset?>("DispensedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double?>("DispensedG")
+                        .HasColumnType("float");
+
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("EatenG")
+                        .HasColumnType("float");
+
+                    b.Property<DateTimeOffset?>("FeedbackSentAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double?>("HoursSinceLastMeal")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("LatencyS")
+                        .HasColumnType("float");
+
+                    b.Property<int>("MealIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("RequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<double?>("Reward")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("TreatBudgetShare")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DogId", "BaselineUtc");
+
+                    b.HasIndex("DogId", "MealIndex", "Day")
+                        .IsUnique();
+
+                    b.ToTable("BanditDecisions", (string)null);
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Bandit.BanditState", b =>
+                {
+                    b.Property<int>("DogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StateJson")
+                        .IsRequired()
+                        .HasMaxLength(2147483647)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("DogId");
+
+                    b.ToTable("BanditStates");
+                });
+
             modelBuilder.Entity("HealthyPaws.Database.Entity.Breed", b =>
                 {
                     b.Property<int>("Id")
@@ -2212,6 +2314,9 @@ namespace HealthyPaws.Database.Migrations
                     b.Property<int>("DogId")
                         .HasColumnType("int");
 
+                    b.Property<short>("MealIndex")
+                        .HasColumnType("smallint");
+
                     b.Property<TimeOnly>("Time")
                         .HasColumnType("time");
 
@@ -2464,6 +2569,26 @@ namespace HealthyPaws.Database.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserDevices");
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Bandit.BanditDecision", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", null)
+                        .WithMany()
+                        .HasForeignKey("DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("HealthyPaws.Database.Entity.Bandit.BanditState", b =>
+                {
+                    b.HasOne("HealthyPaws.Database.Entity.Dog", "Dog")
+                        .WithOne()
+                        .HasForeignKey("HealthyPaws.Database.Entity.Bandit.BanditState", "DogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Dog");
                 });
 
             modelBuilder.Entity("HealthyPaws.Database.Entity.CalorieAgent.DogPlan", b =>

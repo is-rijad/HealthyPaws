@@ -6,6 +6,7 @@ using HealthyPaws.Services.Mapster;
 using HealthyPaws.WebApi.Filters;
 using Mapster;
 using System.Text.Json.Serialization;
+using HealthyPaws.Services.Config;
 
 Env.Load("./.env");
 

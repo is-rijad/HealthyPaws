@@ -8,4 +8,5 @@ namespace HealthyPaws.Services.Device;
 
 public interface IDeviceService : IBaseCrudService<DeviceInsertRequest, DeviceUpdateRequest, DeviceResponse, DeviceSearchObject>
 {
+    Task<string> GetDeviceMac(int dogId);
 }

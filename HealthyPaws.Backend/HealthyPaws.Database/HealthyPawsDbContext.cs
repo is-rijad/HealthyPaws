@@ -1,5 +1,6 @@
 ﻿using HealthyPaws.Database.Converters;
 using HealthyPaws.Database.Entity;
+using HealthyPaws.Database.Entity.Bandit;
 using HealthyPaws.Database.Entity.CalorieAgent;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +25,10 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
     public virtual DbSet<Alert> Alerts { get; set; } = null!;
     public virtual DbSet<DogPlan> DogPlans { get; set; } = null!;
     public virtual DbSet<LearnedState> LearnedStates { get; set; } = null!;
+    
+    public virtual DbSet<BanditState> BanditStates { get; set; } = null!;
+    public virtual DbSet<BanditDecision> BanditDecisions { get; set; } = null!;
+    
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -52,5 +57,8 @@ public class HealthyPawsDbContext(DbContextOptions<HealthyPawsDbContext> options
         modelBuilder.ApplyConfiguration(new AgentDecisionLogEntityConfiguration());
         modelBuilder.ApplyConfiguration(new AlertEntityConfiguration());
         modelBuilder.ApplyConfiguration(new DogPlanEntityConfiguration());
+        
+        modelBuilder.ApplyConfiguration(new BanditStateConfig());
+        modelBuilder.ApplyConfiguration(new BanditDecisionConfig());
     }
 }
