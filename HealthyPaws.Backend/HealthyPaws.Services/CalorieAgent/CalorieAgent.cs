@@ -95,6 +95,7 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
             {
                 ActivityFactor = dog.ActivityStatus.ToString(CultureInfo.InvariantCulture),
                 FoodKcalPerGram = weight.Calorie / 100,
+                FoodKcalUncertainty = weight.CalorieSource == CalorieSource.Estimated ? 0.15 : 0.0,
                 Neutered = dog.IsNeutered,
                 PregnantOrLactating = false, // TODO: Check if use this field
                 LifeStage = dog.LifeStage

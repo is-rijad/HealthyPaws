@@ -119,6 +119,25 @@ public class DogWeightService(HealthyPawsDbContext db,
         return entity;
     }
 
+    protected override async Task BeforeUpdate(int id, DogWeightUpdateRequest request, Database.Entity.DogWeight entity)
+    {
+        await base.BeforeUpdate(id, request, entity);
+        await EnsureOwnedAsync(entity.DogId);
+    }
+
+    /// <summary>Promjena hrane na najnovijem mjerenju mijenja i gramažu u planu (kcal plana ostaju isti).</summary>
+    protected override async Task AfterUpdate(Database.Entity.DogWeight entity)
+    {
+        await base.AfterUpdate(entity);
+        var isLatest = !await dbContext.DogWeights.AnyAsync(w =>
+            w.DogId == entity.DogId && !w.IsRejected && w.Id != entity.Id &&
+            (w.CreatedAt > entity.CreatedAt || (w.CreatedAt == entity.CreatedAt && w.Id > entity.Id)));
+        if (!isLatest || entity.IsRejected || entity.Calorie <= 0) return;
+        var plan = await dbContext.DogPlans.FirstOrDefaultAsync(p => p.DogId == entity.DogId);
+        if (plan is { DailyKcal: > 0 })
+            plan.DailyGrams = plan.DailyKcal / (entity.Calorie / 100);
+    }
+
     protected override async Task BeforeDelete(int id, Database.Entity.DogWeight entity)
     {
         await base.BeforeDelete(id, entity);

@@ -32,12 +32,7 @@ class _FourthStepState extends State<FourthStep>
   };
 
   late List<TimeOfDay> _times;
-  final _calorieController = TextEditingController();
-
-  double? get _calorie =>
-      double.tryParse(_calorieController.text.trim().replaceAll(',', '.'));
-
-  bool get _isValid => !_hasDuplicates && !_tooClose && (_calorie ?? 0) > 0;
+  bool get _isValid => !_hasDuplicates && !_tooClose;
 
   static const _minGapMinutes = 3 * 60;
 
@@ -61,12 +56,12 @@ class _FourthStepState extends State<FourthStep>
     _times = List.of(_presets[2]!);
     _publish();
     widget.isCurrentStepNotifier.addListener(_onCurrentStepChanged);
+    widget.completeStep(_isValid);
   }
 
   @override
   void dispose() {
     widget.isCurrentStepNotifier.removeListener(_onCurrentStepChanged);
-    _calorieController.dispose();
     super.dispose();
   }
 
@@ -75,7 +70,6 @@ class _FourthStepState extends State<FourthStep>
   }
 
   void _publish() {
-    context.read<FourthStepProvider>().calorie = _calorie;
     final sorted = List.of(_times)..sort((a, b) => _minutes(a) - _minutes(b));
     context.read<FourthStepProvider>().mealTimes = sorted
         .map(
@@ -104,7 +98,7 @@ class _FourthStepState extends State<FourthStep>
     super.build(context);
     return WizardStepLayout(
       title: "Ishrana psa",
-      subtitle: "Okvirno: koliko puta dnevno jede, najranije vrijeme obroka i koju hranu koristi.",
+      subtitle: "Okvirno: koliko puta dnevno jede i u koje vrijeme.",
       children: [
         Wrap(
           spacing: 8,
@@ -137,15 +131,6 @@ class _FourthStepState extends State<FourthStep>
               onTap: () => _pickTime(i),
             ),
           ),
-        TextField(
-          controller: _calorieController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(
-            labelText: "Iznos kalorija hrane koju pas koristi",
-            suffixText: "kcal/100g",
-          ),
-          onChanged: (_) => _update(() {}),
-        ),
         if (_hasDuplicates)
           const Text(
             "Vremena obroka moraju biti različita!",

@@ -194,32 +194,11 @@ public class DeviceServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Update_requires_device_ownership()
-    {
-        var owner = await NewUser("a@test.ba");
-        var stranger = await NewUser("b@test.ba");
-        var created = await Sut(owner.Id).InsertAsync(await FullRequest());
-        await Assert.ThrowsAsync<NotFoundException>(() => Sut(stranger.Id).UpdateAsync(created.Id, new DeviceUpdateRequest { DogId = created.DogId }));
-    }
-
-    [Fact]
-    public async Task Update_can_only_assign_a_dog_the_user_owns()
-    {
-        var owner = await NewUser("a@test.ba");
-        var created = await Sut(owner.Id).InsertAsync(await FullRequest());
-        var foreignDog = await _db.AddDogAsync("Tuđi");
-        var ex = await Assert.ThrowsAsync<BadRequestException>(() => Sut(owner.Id).UpdateAsync(created.Id, new DeviceUpdateRequest { DogId = foreignDog.Id }));
-        Assert.Contains("pas nije pronađen", ex.Message);
-    }
-
-    [Fact]
-    public async Task Update_to_own_dog_succeeds()
+    public async Task Update_is_not_supported()
     {
         var owner = await NewUser();
-        var first = await Sut(owner.Id).InsertAsync(await FullRequest());
-        var second = await Sut(owner.Id).InsertAsync(await FullRequest("AA:BB:CC:DD:EE:03"));
-        var updated = await Sut(owner.Id).UpdateAsync(first.Id, new DeviceUpdateRequest { DogId = second.DogId });
-        Assert.Equal(second.DogId, updated.DogId);
+        var created = await Sut(owner.Id).InsertAsync(await FullRequest());
+        await Assert.ThrowsAsync<BadRequestException>(() => Sut(owner.Id).UpdateAsync(created.Id, new DeviceUpdateRequest()));
     }
 
     [Fact]

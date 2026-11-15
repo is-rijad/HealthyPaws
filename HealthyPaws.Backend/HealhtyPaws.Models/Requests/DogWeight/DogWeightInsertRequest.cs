@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using HealthyPaws.Database.Entity;
+using System.ComponentModel.DataAnnotations;
 
 namespace HealhtyPaws.Models.Requests.DogWeight;
 
@@ -13,6 +14,7 @@ public class DogWeightInsertRequest
     [Required]
     [Range(0.01, double.MaxValue)]
     public double Calorie { get; set; }
+    public CalorieSource CalorieSource { get; set; } = CalorieSource.Label;
 
     public DateTime? CreatedAt { get; set; }
 }

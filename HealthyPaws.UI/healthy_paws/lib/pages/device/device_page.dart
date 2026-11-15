@@ -1,7 +1,6 @@
 import 'package:healthy_paws/common/build_context_extensions.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/common/wrappers/load_until_ready_wrapper.dart';
-import 'package:healthy_paws/pages/device/device_form.dart';
 import 'package:healthy_paws/pages/device/device_wizard.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/resources/requests/dog/dog_gender.dart';
@@ -68,7 +67,6 @@ class _DevicePageState extends State<DevicePage> {
         DateTime.now().difference(lastWeight.createdAt) > _weightMaxAge;
     return Card(
       child: ListTile(
-        onTap: () => _editDevice(device),
         leading: Icon(
           device.isConnected ? Icons.sensors : Icons.sensors_off,
           color: device.isConnected ? Colors.green : Colors.grey,
@@ -123,13 +121,6 @@ class _DevicePageState extends State<DevicePage> {
         trailing: Text(device.isConnected ? "Povezan" : "Nije povezan"),
       ),
     );
-  }
-
-  Future<void> _editDevice(DeviceResponse device) async {
-    final saved = await Constants.navigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => DeviceForm(device: device)),
-    );
-    if (saved == true && mounted) await _refresh();
   }
 
   Future<bool> _init() async {

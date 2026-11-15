@@ -9,7 +9,15 @@ class DogWeightUpdateRequest extends JsonRequest {
   int? bcs;
   double? weight;
   double? calorie;
-  DogWeightUpdateRequest({this.bcs, this.weight, this.calorie});
+
+  /// 0 = sa etikete, 1 = procijenjeno iz sastava.
+  int? calorieSource;
+  DogWeightUpdateRequest({
+    this.bcs,
+    this.weight,
+    this.calorie,
+    this.calorieSource,
+  });
 
   @override
   Map<String, dynamic> toJson() => _$DogWeightUpdateRequestToJson(this);

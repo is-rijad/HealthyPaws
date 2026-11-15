@@ -8,3 +8,4 @@ class DogProfile:
     activity_factor: str
     pregnant_or_lactating: bool
     food_kcal_per_gram: float
+    food_kcal_uncertainty: float = 0.0

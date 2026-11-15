@@ -20,10 +20,15 @@ class GuardRails:
     def __init__(self, agent: ca.CalorieAgent):
         self.agent = agent
 
+    def food_step_scale(self) -> float:
+        """Procijenjena (ne deklarirana) kalorijska vrijednost hrane traži konzervativnije korake."""
+        estimated = self.agent.profile.food_kcal_uncertainty > 0
+        return self.agent.config.estimated_food_step_scale if estimated else 1.0
+
     def step_limit_pct(self, n_updates: int, conflict: bool) -> float:
         config = self.agent.config
         base_step_pct = config.early_step_pct if n_updates < config.warmup_updates else config.max_step_pct
-        return base_step_pct * (config.conflict_step_scale if conflict else 1.0)
+        return base_step_pct * (config.conflict_step_scale if conflict else 1.0) * self.food_step_scale()
 
     @staticmethod
     def _clamp(value: float, lower: float, upper: float) -> float:

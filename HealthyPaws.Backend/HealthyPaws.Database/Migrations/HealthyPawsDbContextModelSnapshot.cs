@@ -2291,14 +2291,9 @@ namespace HealthyPaws.Database.Migrations
                         .HasColumnType("nvarchar(16)")
                         .UseCollation("Croatian_CI_AS");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BreedId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Dogs");
                 });
@@ -2341,6 +2336,9 @@ namespace HealthyPaws.Database.Migrations
 
                     b.Property<double>("Calorie")
                         .HasColumnType("float");
+
+                    b.Property<int>("CalorieSource")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -2652,10 +2650,6 @@ namespace HealthyPaws.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HealthyPaws.Database.Entity.User", null)
-                        .WithMany("Dogs")
-                        .HasForeignKey("UserId");
-
                     b.Navigation("Breed");
                 });
 
@@ -2778,11 +2772,6 @@ namespace HealthyPaws.Database.Migrations
             modelBuilder.Entity("HealthyPaws.Database.Entity.Dog", b =>
                 {
                     b.Navigation("DogWeights");
-                });
-
-            modelBuilder.Entity("HealthyPaws.Database.Entity.User", b =>
-                {
-                    b.Navigation("Dogs");
                 });
 #pragma warning restore 612, 618
         }

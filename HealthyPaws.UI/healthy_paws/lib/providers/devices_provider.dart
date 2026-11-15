@@ -2,6 +2,8 @@ import 'package:healthy_paws/common/components/snackbars/success_snackbar.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/common/providers/base_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/first_step_provider.dart';
+import 'package:healthy_paws/common/utils/food_energy.dart';
+import 'package:healthy_paws/providers/wizard_providers/fifth_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/fourth_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/second_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/third_step_provider.dart';
@@ -28,13 +30,15 @@ class DevicesProvider
     final secondStepRequest = context.read<SecondStepProvider>().request;
     final thirdStep = context.read<ThirdStepProvider>();
     final fourthStep = context.read<FourthStepProvider>();
+    final fifthStep = context.read<FifthStepProvider>();
     final request = DeviceInsertRequest(
       macAddress: firstStepRequest!.macAddress,
       dog: secondStepRequest,
       dogWeight: DogWeightInsertRequest(
         bcs: thirdStep.bcs!,
         weight: thirdStep.weight!,
-        calorie: fourthStep.calorie!,
+        calorie: fifthStep.calorie!,
+        calorieSource: (fifthStep.source ?? FoodCalorieSource.label).apiValue,
       ),
       mealTimes: fourthStep.mealTimes,
     );

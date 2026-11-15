@@ -58,6 +58,7 @@ class CalorieAgentConfig:
     max_step_pct: float = 10.0
     early_step_pct: float = 5.0
     conflict_step_scale: float = 0.5
+    estimated_food_step_scale: float = 0.5  # kcal hrane procijenjen iz sastava (±15%): manji koraci
     min_change_pct: float = 4.0  # promjena ispod ovoga je ispod šuma mjerenja (20 kcal ~ 0.02 kg/sedm.)
     min_rer_multiple: float = 1.0  # donja granica = RER(ciljne težine)
     max_rer_multiple: float = 3.0  # PROVJERI
@@ -80,7 +81,7 @@ class CalorieAgentConfig:
     bcs_low_max: int = 3
     bcs_high_min: int = 7
 
-    activity_factors = [1.2]
+    activity_factors = [1.2, 1.4, 1.6, 1.8, 2.5]
     valid_bcs = [1, 3, 5, 7, 9]
 
 DEFAULT_AGENT_CONFIG = CalorieAgentConfig()

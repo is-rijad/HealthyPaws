@@ -206,6 +206,48 @@ public class DogWeightServiceTests : IDisposable
         Assert.Equal(22, await Sut(owner.Id).GetLatestDogWeightAsync(dog.Id));
     }
 
+    [Fact]
+    public async Task Update_food_on_latest_weight_changes_source_and_plan_grams()
+    {
+        var (dog, owner) = await DogWithOwner();
+        await Seed(dog.Id, 20, -9);
+        var latest = await Seed(dog.Id, 21, -1);
+        await using (var ctx = _db.Create())
+        {
+            ctx.DogPlans.Add(new HealthyPaws.Database.Entity.CalorieAgent.DogPlan { DogId = dog.Id, DailyKcal = 700, DailyGrams = 200 });
+            await ctx.SaveChangesAsync();
+        }
+
+        var updated = await Sut(owner.Id).UpdateAsync(latest, new DogWeightUpdateRequest { Calorie = 280, CalorieSource = CalorieSource.Estimated });
+
+        Assert.Equal((280d, CalorieSource.Estimated), (updated.Calorie, updated.CalorieSource));
+        Assert.Equal(250, (await _db.Create().DogPlans.SingleAsync()).DailyGrams, 6);
+    }
+
+    [Fact]
+    public async Task Update_food_on_older_weight_leaves_plan_untouched()
+    {
+        var (dog, owner) = await DogWithOwner();
+        var older = await Seed(dog.Id, 20, -9);
+        await Seed(dog.Id, 21, -1);
+        await using (var ctx = _db.Create())
+        {
+            ctx.DogPlans.Add(new HealthyPaws.Database.Entity.CalorieAgent.DogPlan { DogId = dog.Id, DailyKcal = 700, DailyGrams = 200 });
+            await ctx.SaveChangesAsync();
+        }
+        await Sut(owner.Id).UpdateAsync(older, new DogWeightUpdateRequest { Calorie = 280 });
+        Assert.Equal(200, (await _db.Create().DogPlans.SingleAsync()).DailyGrams);
+    }
+
+    [Fact]
+    public async Task Update_requires_dog_ownership()
+    {
+        var (dog, _) = await DogWithOwner();
+        var id = await Seed(dog.Id, 20, -1);
+        var stranger = await _db.AddOwnerAsync(await _db.AddDogAsync("Tuđi"));
+        await Assert.ThrowsAsync<NotFoundException>(() => Sut(stranger.Id).UpdateAsync(id, new DogWeightUpdateRequest { Calorie = 280 }));
+    }
+
     async Task<int> Seed(int dogId, double kg, int daysAgo, int bcs = 5)
     {
         await using var ctx = _db.Create();

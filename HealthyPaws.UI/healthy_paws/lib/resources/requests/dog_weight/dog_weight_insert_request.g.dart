@@ -13,6 +13,7 @@ DogWeightInsertRequest _$DogWeightInsertRequestFromJson(
   bcs: (json['bcs'] as num).toInt(),
   weight: (json['weight'] as num).toDouble(),
   calorie: (json['calorie'] as num).toDouble(),
+  calorieSource: (json['calorieSource'] as num?)?.toInt() ?? 0,
   createdAt: json['createdAt'] == null
       ? null
       : DateTime.parse(json['createdAt'] as String),
@@ -25,5 +26,6 @@ Map<String, dynamic> _$DogWeightInsertRequestToJson(
   'bcs': instance.bcs,
   'weight': instance.weight,
   'calorie': instance.calorie,
+  'calorieSource': instance.calorieSource,
   'createdAt': instance.createdAt?.toIso8601String(),
 };

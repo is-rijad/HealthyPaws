@@ -169,7 +169,10 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () async {
               final saved = await Constants.navigatorKey.currentState?.push(
-                MaterialPageRoute(builder: (_) => DogForm(dog: dog)),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      DogForm(dog: dog, lastWeight: device.lastWeightRecord),
+                ),
               );
               if (saved == true && mounted) await _reload();
             },

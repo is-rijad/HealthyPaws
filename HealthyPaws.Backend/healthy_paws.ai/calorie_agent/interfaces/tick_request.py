@@ -45,7 +45,8 @@ class TickRequest:
             profile=DogProfile(life_stage=profile.life_stage, neutered=profile.neutered,
                                activity_factor=profile.activity_factor,
                                pregnant_or_lactating=profile.pregnant_or_lactating,
-                               food_kcal_per_gram=profile.food_kcal_per_gram),
+                               food_kcal_per_gram=profile.food_kcal_per_gram,
+                               food_kcal_uncertainty=profile.food_kcal_uncertainty),
             plan=PlanState(current_daily_kcal=optional_field(plan, "current_daily_kcal"),
                            plan_version=plan.plan_version,
                            learned=cls._learned(plan.learned))

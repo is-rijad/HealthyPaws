@@ -155,8 +155,8 @@ class TestEstimator:
         assert learned.mer_estimate_kcal == pytest.approx(true_mer, rel=0.02)
 
 
-def make_guard(config=CFG):
-    return GuardRails(SimpleNamespace(config=config))
+def make_guard(config=CFG, food_kcal_uncertainty=0.0):
+    return GuardRails(SimpleNamespace(config=config, profile=DogProfile("adult", True, "1.2", False, 3.5, food_kcal_uncertainty)))
 
 
 class TestGuardRails:
@@ -170,6 +170,12 @@ class TestGuardRails:
     def test_step_limit_conflict_halves(self):
         assert self.g.step_limit_pct(0, True) == 2.5
         assert self.g.step_limit_pct(10, True) == 5.0
+
+    def test_estimated_food_kcal_halves_step(self):
+        g = make_guard(food_kcal_uncertainty=0.15)
+        assert g.step_limit_pct(0, False) == 2.5
+        assert g.step_limit_pct(3, False) == 5.0
+        assert g.step_limit_pct(3, True) == 2.5
 
     def test_within_all_limits_passes_through(self):
         r = self.g.apply(1060, 1000, 500, 2000, 10)

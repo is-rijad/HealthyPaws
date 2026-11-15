@@ -7,8 +7,8 @@ part of 'device_update_request.dart';
 // **************************************************************************
 
 DeviceUpdateRequest _$DeviceUpdateRequestFromJson(Map<String, dynamic> json) =>
-    DeviceUpdateRequest(dogId: (json['dogId'] as num).toInt());
+    DeviceUpdateRequest();
 
 Map<String, dynamic> _$DeviceUpdateRequestToJson(
   DeviceUpdateRequest instance,
-) => <String, dynamic>{'dogId': instance.dogId};
+) => <String, dynamic>{};

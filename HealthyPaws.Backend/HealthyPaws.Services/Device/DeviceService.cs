@@ -96,15 +96,8 @@ public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationSe
             .Include(d => d.Dog).ThenInclude(d => d!.DogWeights!.Where(w => !w.IsRejected).OrderByDescending(w => w.CreatedAt).Take(1));
     }
 
-    protected override async Task BeforeUpdate(int id, DeviceUpdateRequest request, Database.Entity.Device entity)
-    {
-        await base.BeforeUpdate(id, request, entity);
-        var userId = authorizationService.GetUserId();
-        if (!await dbContext.UserDevices.AnyAsync(ud => ud.DeviceId == id && ud.UserId == userId))
-            throw new NotFoundException("Nije pronađeno!");
-        if (!await dbContext.UserDevices.AnyAsync(ud => ud.UserId == userId && ud.Device!.DogId == request.DogId))
-            throw new BadRequestException("Odabrani pas nije pronađen!");
-    }
+    public override Task<DeviceResponse> UpdateAsync(int id, DeviceUpdateRequest request)
+        => throw new BadRequestException("Uređivanje uređaja nije podržano!");
 
     protected override async Task PrepareForResponse(Database.Entity.Device entity, HealthyPawsDbContext dbContext)
     {

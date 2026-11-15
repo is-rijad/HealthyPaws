@@ -12,6 +12,7 @@ DogWeightUpdateRequest _$DogWeightUpdateRequestFromJson(
   bcs: (json['bcs'] as num?)?.toInt(),
   weight: (json['weight'] as num?)?.toDouble(),
   calorie: (json['calorie'] as num?)?.toDouble(),
+  calorieSource: (json['calorieSource'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$DogWeightUpdateRequestToJson(
@@ -20,4 +21,5 @@ Map<String, dynamic> _$DogWeightUpdateRequestToJson(
   'bcs': instance.bcs,
   'weight': instance.weight,
   'calorie': instance.calorie,
+  'calorieSource': instance.calorieSource,
 };

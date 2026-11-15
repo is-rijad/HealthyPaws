@@ -9,8 +9,6 @@ public class User
     public string Email { get; set; } = null!;
     public string PasswordHash { get; set; } = null!;
     public string PasswordSalt { get; set; } = null!;
-
-    public ICollection<Dog>? Dogs { get; set; }
 }
 
 public class UserEntityConfiguration : IEntityTypeConfiguration<User> {

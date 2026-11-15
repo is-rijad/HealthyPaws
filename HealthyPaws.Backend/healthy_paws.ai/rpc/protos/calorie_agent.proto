@@ -46,6 +46,8 @@ message DogProfile {
   string activity_factor = 3;
   bool pregnant_or_lactating = 4;
   double food_kcal_per_gram = 5;
+  // Relativna nesigurnost kcal vrijednosti hrane (0 = sa etikete, 0.15 = procijenjeno iz sastava).
+  double food_kcal_uncertainty = 6;
 }
 
 message LearnedState {

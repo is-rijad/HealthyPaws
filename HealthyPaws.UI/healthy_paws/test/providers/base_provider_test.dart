@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:healthy_paws/common/resources/search_result.dart';
 import 'package:healthy_paws/providers/dogs_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/first_step_provider.dart';
+import 'package:healthy_paws/providers/wizard_providers/fifth_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/fourth_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/second_step_provider.dart';
 import 'package:healthy_paws/providers/wizard_providers/third_step_provider.dart';
@@ -169,12 +170,14 @@ void main() {
       final second = SecondStepProvider();
       final third = ThirdStepProvider();
       final fourth = FourthStepProvider();
-      expect([first.request, second.request, third.bcs, third.weight, fourth.mealTimes, fourth.calorie],
+      final fifth = FifthStepProvider();
+      expect([first.request, second.request, third.bcs, third.weight, fourth.mealTimes, fifth.calorie],
           everyElement(isNull));
 
       second.request = insertRequest();
       third..bcs = 5..weight = 20.5;
-      fourth..mealTimes = ['08:00:00', '18:00:00']..calorie = 350;
+      fourth.mealTimes = ['08:00:00', '18:00:00'];
+      fifth.calorie = 350;
       expect(second.request!.name, 'Rex');
       expect((third.bcs, third.weight), (5, 20.5));
       expect(fourth.mealTimes, ['08:00:00', '18:00:00']);

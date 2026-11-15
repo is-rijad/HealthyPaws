@@ -10,12 +10,16 @@ class DogWeightInsertRequest extends JsonRequest {
   int bcs;
   double weight;
   double calorie;
+
+  /// 0 = sa etikete, 1 = procijenjeno iz sastava.
+  int calorieSource;
   DateTime? createdAt;
   DogWeightInsertRequest({
     this.dogId,
     required this.bcs,
     required this.weight,
     required this.calorie,
+    this.calorieSource = 0,
     this.createdAt,
   });
 

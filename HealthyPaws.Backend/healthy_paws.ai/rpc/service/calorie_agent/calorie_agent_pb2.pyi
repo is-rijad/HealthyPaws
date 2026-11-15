@@ -73,18 +73,20 @@ class IntakeSummary(_message.Message):
     def __init__(self, eaten_g_per_day: _Optional[float] = ..., offered_g_per_day: _Optional[float] = ..., days_covered: _Optional[float] = ..., period_days: _Optional[float] = ..., treat_kcal_per_day: _Optional[float] = ...) -> None: ...
 
 class DogProfile(_message.Message):
-    __slots__ = ("life_stage", "neutered", "activity_factor", "pregnant_or_lactating", "food_kcal_per_gram")
+    __slots__ = ("life_stage", "neutered", "activity_factor", "pregnant_or_lactating", "food_kcal_per_gram", "food_kcal_uncertainty")
     LIFE_STAGE_FIELD_NUMBER: _ClassVar[int]
     NEUTERED_FIELD_NUMBER: _ClassVar[int]
     ACTIVITY_FACTOR_FIELD_NUMBER: _ClassVar[int]
     PREGNANT_OR_LACTATING_FIELD_NUMBER: _ClassVar[int]
     FOOD_KCAL_PER_GRAM_FIELD_NUMBER: _ClassVar[int]
+    FOOD_KCAL_UNCERTAINTY_FIELD_NUMBER: _ClassVar[int]
     life_stage: str
     neutered: bool
     activity_factor: str
     pregnant_or_lactating: bool
     food_kcal_per_gram: float
-    def __init__(self, life_stage: _Optional[str] = ..., neutered: _Optional[bool] = ..., activity_factor: _Optional[str] = ..., pregnant_or_lactating: _Optional[bool] = ..., food_kcal_per_gram: _Optional[float] = ...) -> None: ...
+    food_kcal_uncertainty: float
+    def __init__(self, life_stage: _Optional[str] = ..., neutered: _Optional[bool] = ..., activity_factor: _Optional[str] = ..., pregnant_or_lactating: _Optional[bool] = ..., food_kcal_per_gram: _Optional[float] = ..., food_kcal_uncertainty: _Optional[float] = ...) -> None: ...
 
 class LearnedState(_message.Message):
     __slots__ = ("mer_estimate_kcal", "variance_kcal2", "n_updates", "consecutive_bad_weeks", "weeks_at_bound", "pending_weight_kg", "last_update_at")

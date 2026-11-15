@@ -151,8 +151,8 @@ void main() {
       expect(dogBodyConditionScoreMap.keys.toList()..sort(), [1, 3, 5, 7, 9]);
     });
 
-    test('activity factor offered by the UI is one the agent supports (1.2)', () {
-      expect(dogActivityStatusMap.keys, [1.2]);
+    test('activity factors offered by the UI are exactly the ones the agent supports', () {
+      expect(dogActivityStatusMap.keys, [1.2, 1.4, 1.6, 1.8, 2.5]);
     });
 
     test('gender labels exist for every enum value', () {

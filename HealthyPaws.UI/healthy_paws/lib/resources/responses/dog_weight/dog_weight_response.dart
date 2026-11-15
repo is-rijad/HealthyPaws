@@ -12,6 +12,9 @@ class DogWeightResponse extends JsonResponse {
   int bcs;
   double weight;
   double calorie;
+
+  /// 0 = sa etikete, 1 = procijenjeno iz sastava.
+  int calorieSource;
   DateTime createdAt;
   bool isRejected;
   AgentDecisionResponse? agent;
@@ -20,6 +23,7 @@ class DogWeightResponse extends JsonResponse {
     required this.bcs,
     required this.weight,
     required this.calorie,
+    this.calorieSource = 0,
     required this.createdAt,
     this.isRejected = false,
     this.agent,

@@ -20,4 +20,10 @@ public class DogWeightsController(IDogWeightService service) : BaseCrudControlle
     {
         return await base.Insert(request);
     }
+
+    [HttpPut("{id}")]
+    public override async Task<IActionResult> Update(int id, [FromBody] DogWeightUpdateRequest request)
+    {
+        return await base.Update(id, request);
+    }
 }

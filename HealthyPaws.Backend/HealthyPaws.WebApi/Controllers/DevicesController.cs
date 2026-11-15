@@ -28,10 +28,4 @@ public class DevicesController(IDeviceService service) : BaseCrudController<Devi
         return await base.Insert(request);
     }
 
-    [HttpPut("{id}")]
-    public override async Task<IActionResult> Update(int id, [FromBody] DeviceUpdateRequest request)
-    {
-        return await base.Update(id, request);
-    }
-
 }

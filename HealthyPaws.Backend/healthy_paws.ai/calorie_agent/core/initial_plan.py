@@ -21,7 +21,8 @@ class InitialPlan:
         proposed_kcal, rate_kg_per_week = Controller(self.agent).propose_kcal(
             float(self.agent.learned.mer_estimate_kcal), self.agent.measurement.weight)
 
-        step_pct = config.early_step_pct * (config.conflict_step_scale if classification.conflict else 1.0)
+        step_pct = (config.early_step_pct * (config.conflict_step_scale if classification.conflict else 1.0)
+                    * GuardRails(self.agent).food_step_scale())
 
         # Referenca je prior jer prethodnog plana nema; minimalna promjena se ne provjerava jer plan mora nastati.
         result = GuardRails(self.agent).apply(
