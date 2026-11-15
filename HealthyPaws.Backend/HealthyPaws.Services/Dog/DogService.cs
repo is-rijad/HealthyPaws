@@ -18,6 +18,24 @@ public class DogService(HealthyPawsDbContext db, IMapper map, AuthorizationServi
     public Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to)
         => calorieAgentService.GetCalorieBudgetAsync(dogId, from, to);
 
+    public async Task<WeighingStatusResponse> GetWeighingStatusAsync(int dogId)
+    {
+        var userId = authorizationService.GetUserId();
+        if (!await dbContext.UserDevices.AnyAsync(ud => ud.UserId == userId && ud.Device!.DogId == dogId))
+            throw new NotFoundException("Nije pronađeno!");
+
+        var nextMeasureAt = await dbContext.DogPlans.AsNoTracking()
+            .Where(p => p.DogId == dogId)
+            .Select(p => (DateTime?)p.NextMeasureAt)
+            .FirstOrDefaultAsync();
+        if (nextMeasureAt is null)
+            return new WeighingStatusResponse(dogId, null, true, 0);
+
+        var next = DateTime.SpecifyKind(nextMeasureAt.Value, DateTimeKind.Utc);
+        var overdue = DateTime.UtcNow - next;
+        return new WeighingStatusResponse(dogId, next, overdue >= TimeSpan.Zero, overdue >= TimeSpan.Zero ? (int)overdue.TotalDays : 0);
+    }
+
     public override async Task<IQueryable<Database.Entity.Dog>> ApplyFilter(IQueryable<Database.Entity.Dog> queryable, DogSearchObject searchObject)
     {
         queryable = await base.ApplyFilter(queryable, searchObject);

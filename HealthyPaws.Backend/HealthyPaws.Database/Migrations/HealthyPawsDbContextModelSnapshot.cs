@@ -1667,7 +1667,7 @@ namespace HealthyPaws.Database.Migrations
                             Id = 217,
                             MaxWeight = 6.80m,
                             MinWeight = 4.08m,
-                            Name = "Rasel terijer"
+                            Name = "Džek Rasel terijer"
                         },
                         new
                         {
@@ -2350,6 +2350,9 @@ namespace HealthyPaws.Database.Migrations
 
                     b.Property<double?>("EatenGPerDay")
                         .HasColumnType("float");
+
+                    b.Property<bool>("IsRejected")
+                        .HasColumnType("bit");
 
                     b.Property<double?>("OfferedGPerDay")
                         .HasColumnType("float");

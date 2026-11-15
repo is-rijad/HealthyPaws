@@ -32,7 +32,10 @@ public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationSe
             dogWeightInsertRequest.DogId = dog.Id;
             dogWeightInsertRequest.CreatedAt = DateTime.UtcNow;
 
-            await calorieAgentService.TickAsync(dog, dogWeightInsertRequest);
+            var decision = await calorieAgentService.TickAsync(dog, dogWeightInsertRequest);
+            // Sumnjiva težina pri dodavanju uređaja: ništa se ne sprema, korisnik ispravlja težinu i pokušava ponovo.
+            if (decision.Action == global::CalorieAgent.Action.RequestRemeasure)
+                throw new BadRequestException(decision.Explanation);
             
             await dbContext.DogWeights.AddAsync(dogWeightInsertRequest);
 
@@ -90,7 +93,7 @@ public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationSe
         queryable = await base.IncludeAdditionalEntities(queryable);
         return queryable
             .Include(d => d.Dog).ThenInclude(d => d!.Breed)
-            .Include(d => d.Dog).ThenInclude(d => d!.DogWeights!.OrderByDescending(w => w.CreatedAt).Take(1));
+            .Include(d => d.Dog).ThenInclude(d => d!.DogWeights!.Where(w => !w.IsRejected).OrderByDescending(w => w.CreatedAt).Take(1));
     }
 
     protected override async Task BeforeUpdate(int id, DeviceUpdateRequest request, Database.Entity.Device entity)
@@ -108,7 +111,7 @@ public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationSe
         await base.PrepareForResponse(entity, dbContext);
         entity.Dog = await dbContext.Dogs
             .Include(d => d.Breed)
-            .Include(d => d.DogWeights!.OrderByDescending(w => w.CreatedAt).Take(1))
+            .Include(d => d.DogWeights!.Where(w => !w.IsRejected).OrderByDescending(w => w.CreatedAt).Take(1))
             .AsNoTracking()
             .FirstOrDefaultAsync(d => d.Id == entity.DogId);
     }
@@ -129,6 +132,20 @@ public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationSe
                 throw new BadRequestException("Unesite od 1 do 4 obroka dnevno!");
             if (mealTimes.Distinct().Count() != mealTimes.Count)
                 throw new BadRequestException("Vremena obroka moraju biti različita!");
+            if (!MealTimesSpacedEnough(mealTimes))
+                throw new BadRequestException("Vremena obroka moraju biti međusobno udaljena najmanje 3 sata!");
         }
+    }
+
+    private const int MinMealGapMinutes = 3 * 60;
+
+    private static bool MealTimesSpacedEnough(List<TimeOnly> mealTimes)
+    {
+        var minutes = mealTimes.Select(t => t.Hour * 60 + t.Minute).OrderBy(m => m).ToList();
+        if (minutes.Count < 2) return true;
+        for (var i = 1; i < minutes.Count; i++)
+            if (minutes[i] - minutes[i - 1] < MinMealGapMinutes)
+                return false;
+        return minutes[0] + 24 * 60 - minutes[^1] >= MinMealGapMinutes;
     }
 }

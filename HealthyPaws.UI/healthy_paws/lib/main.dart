@@ -5,6 +5,8 @@ import 'package:healthy_paws/providers/breeds_provider.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/providers/dog_weights_provider.dart';
 import 'package:healthy_paws/providers/dogs_provider.dart';
+import 'package:healthy_paws/providers/agent_alerts_provider.dart';
+import 'package:healthy_paws/providers/agent_logs_provider.dart';
 import 'package:healthy_paws/providers/treat_logs_provider.dart';
 import 'package:healthy_paws/providers/treats_provider.dart';
 import 'package:healthy_paws/providers/users_provider.dart';
@@ -62,6 +64,8 @@ List<SingleChildWidget> registerProviders(AccessTokenPayload? payload) {
     ChangeNotifierProvider(create: (_) => DogWeightsProvider()),
     ChangeNotifierProvider(create: (_) => TreatsProvider()),
     ChangeNotifierProvider(create: (_) => TreatLogsProvider()),
+    ChangeNotifierProvider(create: (_) => AgentAlertsProvider()),
+    ChangeNotifierProvider(create: (_) => AgentLogsProvider()),
     ChangeNotifierProvider(create: (_) => FirstStepProvider()),
     ChangeNotifierProvider(create: (_) => SecondStepProvider()),
     ChangeNotifierProvider(create: (_) => ThirdStepProvider()),

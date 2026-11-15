@@ -43,8 +43,8 @@ class TickRequestValidator:
                 <= measurement.max_weight * config.weight_vs_range_ratio):
             issues.append(ValidationIssue(
                 remeasure, "measurement.weight",
-                f"težina {measurement.weight:g} kg je predaleko od raspona "
-                f"{measurement.min_weight:g}-{measurement.max_weight:g} kg",
+                f"težina {measurement.weight:g} kg je previše udaljena od uobičajenog raspona za pasminu "
+                f"({measurement.min_weight:g}-{measurement.max_weight:g} kg)",
                 confirmable=True))
         if measurement.bcs not in config.valid_bcs:
             issues.append(ValidationIssue(remeasure, "measurement.bcs", f"BCS {measurement.bcs} nije u validnom opsegu"))
@@ -58,37 +58,37 @@ class TickRequestValidator:
         if cls._finite(measurement.min_weight, measurement.max_weight):
             if measurement.min_weight <= 0 or measurement.min_weight >= measurement.max_weight:
                 issues.append(ValidationIssue(escalate, "measurement.minWeight/maxWeight",
-                                              "raspon težine (MinWeight/MaxWeight)"))
+                                              "podaci o pasmini (raspon težine) nisu ispravni"))
             elif measurement.max_weight > config.range_max_ratio * measurement.min_weight:
                 issues.append(ValidationIssue(
                     escalate, "measurement.minWeight/maxWeight",
-                    f"raspon težine je prešir ({measurement.min_weight:g}-{measurement.max_weight:g} kg)"))
+                    f"raspon težine za pasminu je neuobičajeno širok ({measurement.min_weight:g}-{measurement.max_weight:g} kg)"))
 
         food_kcal_per_gram = profile.food_kcal_per_gram
         if not (math.isfinite(food_kcal_per_gram)
                 and config.food_kcal_min <= food_kcal_per_gram <= config.food_kcal_max):
-            issues.append(ValidationIssue(escalate, "profile.foodKcalPerGram", "kcal po gramu hrane"))
+            issues.append(ValidationIssue(escalate, "profile.foodKcalPerGram", "kalorijska vrijednost hrane nije u dozvoljenom rasponu"))
         try:
             activity_factor = float(profile.activity_factor)
         except ValueError:
             activity_factor = math.nan
         if not (math.isfinite(activity_factor) and activity_factor in config.activity_factors):
-            issues.append(ValidationIssue(escalate, "profile.activityFactor", "faktor aktivnosti"))
+            issues.append(ValidationIssue(escalate, "profile.activityFactor", "nivo aktivnosti psa nije ispravan"))
 
         # current_daily_kcal == None znači "plan još nema dozu" (prvi tick); to nije greška.
         plan = request.plan
         if plan is not None and plan.current_daily_kcal is not None and (
                 not math.isfinite(plan.current_daily_kcal) or plan.current_daily_kcal <= 0):
-            issues.append(ValidationIssue(escalate, "plan.currentDailyKcal", "trenutni dnevni plan"))
+            issues.append(ValidationIssue(escalate, "plan.currentDailyKcal", "trenutni plan ishrane nije ispravan"))
 
         if intake is not None:
             for name, grams in (("eatenGramsPerDay", intake.eaten_g_per_day),
                                 ("offeredGramsPerDay", intake.offered_g_per_day)):
                 if grams is not None and (not math.isfinite(grams) or grams < 0):
-                    issues.append(ValidationIssue(escalate, f"intake.{name}", "unos hranilice"))
+                    issues.append(ValidationIssue(escalate, f"intake.{name}", "podaci o unosu hrane iz hranilice nisu ispravni"))
             if not (cls._finite(intake.period_days, intake.days_covered) and intake.period_days >= 0
                     and 0 <= intake.days_covered <= intake.period_days + config.days_covered_slack):
-                issues.append(ValidationIssue(escalate, "intake.daysCovered/periodDays", "period unosa"))
+                issues.append(ValidationIssue(escalate, "intake.daysCovered/periodDays", "period unosa hrane nije ispravan"))
             elif (intake.eaten_g_per_day is not None and intake.offered_g_per_day and intake.offered_g_per_day > 0
                   and intake.eaten_g_per_day > config.intake_over_offered_warn * intake.offered_g_per_day):
                 issues.append(ValidationIssue(Severity.WARN, "intake.eatenGramsPerDay",

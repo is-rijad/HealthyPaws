@@ -1,4 +1,5 @@
 ﻿using Hangfire;
+using HealthyPaws.Services.AgentInsights;
 using HealthyPaws.Services.Authorization;
 using HealthyPaws.Services.Bandit;
 using HealthyPaws.Services.Bandit.Consumers;
@@ -57,6 +58,8 @@ public static class ServicesConfiguration
         services.AddScoped<IFeedingService, FeedingService.FeedingService>();
 
         services.AddScoped<ICalorieAgentService, CalorieAgentService>();
+        services.AddScoped<IAgentAlertService, AgentAlertService>();
+        services.AddScoped<IAgentDecisionLogService, AgentDecisionLogService>();
 
         services.AddScoped<INotificationService, NotificationService>();
 

@@ -114,7 +114,9 @@ class CalorieAgent:
 
         if self.days_since_previous is not None and self.days_since_previous < self.config.min_period_days:
             self.context["days_since_previous"] = self.days_since_previous
-            return self.decisions.stop(Action.NO_CHANGE, "MEASUREMENT_TOO_SOON")
+            self.context["min_period_days"] = self.config.min_period_days
+            # Nevaljan ulaz: backend odbija mjerenje (BadRequest) i ništa ne bilježi.
+            return self.decisions.stop(Action.NO_CHANGE, "MEASUREMENT_TOO_SOON", has_error=True)
 
         return self.decisions.plausibility()
 

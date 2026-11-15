@@ -105,7 +105,8 @@ class _TreatTrackerPageState extends State<TreatTrackerPage> {
     final isOver = budget.remaining < 0;
     final progress = budget.dailyBudget <= 0
         ? 0.0
-        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget).clamp(0.0, 1.0);
+        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget)
+              .clamp(0.0, 1.0);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),

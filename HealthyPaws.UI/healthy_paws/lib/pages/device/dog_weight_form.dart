@@ -2,9 +2,11 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:healthy_paws/common/components/snackbars/success_snackbar.dart';
 import 'package:healthy_paws/common/constants.dart';
 import 'package:healthy_paws/components/dog_weight/dog_weight_component.dart';
+import 'package:healthy_paws/pages/main_shell.dart';
 import 'package:healthy_paws/providers/devices_provider.dart';
 import 'package:healthy_paws/providers/dog_weights_provider.dart';
 import 'package:healthy_paws/resources/requests/dog_weight/dog_weight_insert_request.dart';
+import 'package:healthy_paws/resources/responses/agent/agent_decision_response.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/widgets/buttons/primary_button.dart';
 import 'package:healthy_paws/widgets/wrappers/page_wrapper.dart';
@@ -78,11 +80,87 @@ class _DogWeightFormState extends State<DogWeightForm> {
     });
     final added = await context.read<DogWeightsProvider>().insert(request);
     if (!mounted) return;
+    if (added.isRejected) {
+      final remeasure = await _showRemeasureDialog(added.agent?.explanation);
+      if (!mounted) return;
+      if (remeasure) return;
+      Constants.navigatorKey.currentState?.pop(true);
+      return;
+    }
     widget.device.lastWeightRecord = added;
     context.read<DevicesProvider>().updateLocally(widget.device);
+    final agent = added.agent;
+    if (agent != null && agent.action == "Escalate") {
+      final openAlerts = await _showEscalateDialog(agent.explanation);
+      if (!mounted) return;
+      Constants.navigatorKey.currentState?.pop(true);
+      if (openAlerts) MainShell.goToTab(3);
+      return;
+    }
     Constants.messengerKey.currentState?.showSnackBar(
-      SuccessSnackbar(message: "Uspješno ste dodali zapis težine psa!"),
+      SuccessSnackbar(message: _resultMessage(agent)),
     );
     Constants.navigatorKey.currentState?.pop(true);
+  }
+
+  String _resultMessage(AgentDecisionResponse? agent) {
+    const base = "Uspješno ste dodali zapis težine psa!";
+    if (agent == null) return base;
+    final kcal = agent.newDailyKcal;
+    if (agent.planChanged && kcal != null) {
+      final grams = agent.newDailyGrams;
+      return "$base Plan ishrane ažuriran: ${kcal.round()} kcal/dan"
+          "${grams == null ? "" : " (${grams.round()} g)"}.";
+    }
+    return "$base ${agent.explanation}";
+  }
+
+  /// Vraća true ako korisnik želi otvoriti ekran s upozorenjima.
+  Future<bool> _showEscalateDialog(String explanation) async {
+    final openAlerts = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Potrebna provjera"),
+        content: Text(explanation),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Zatvori"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Pogledaj upozorenja"),
+          ),
+        ],
+      ),
+    );
+    return openAlerts ?? false;
+  }
+
+  /// Vraća true ako korisnik želi odmah ponoviti vaganje (forma ostaje otvorena).
+  Future<bool> _showRemeasureDialog(String? explanation) async {
+    final remeasure = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text("Ponovite vaganje"),
+        content: Text(
+          explanation ??
+              "Unesena težina izgleda sumnjivo. Molimo ponovite vaganje.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Zatvori"),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Ponovi vaganje"),
+          ),
+        ],
+      ),
+    );
+    return remeasure ?? false;
   }
 }

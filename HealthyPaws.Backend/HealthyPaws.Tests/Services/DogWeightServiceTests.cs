@@ -45,6 +45,34 @@ public class DogWeightServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Insert_returns_agent_decision_and_marks_remeasure_as_rejected()
+    {
+        var (dog, owner) = await DogWithOwner();
+        _agent.Next = new CalorieAgentResponse
+        {
+            Action = global::CalorieAgent.Action.RequestRemeasure,
+            Explanation = "Ponovite vaganje",
+            ReasonCodes = { "INVALID_MEASUREMENT" }
+        };
+
+        var response = await Sut(owner.Id).InsertAsync(Req(dog.Id, 21.5));
+
+        Assert.True(response.IsRejected);
+        Assert.Equal("RequestRemeasure", response.Agent!.Action);
+        Assert.Equal("Ponovite vaganje", response.Agent.Explanation);
+        Assert.True((await _db.Create().DogWeights.SingleAsync()).IsRejected);
+    }
+
+    [Fact]
+    public async Task Insert_with_regular_decision_is_not_rejected()
+    {
+        var (dog, owner) = await DogWithOwner();
+        var response = await Sut(owner.Id).InsertAsync(Req(dog.Id));
+        Assert.False(response.IsRejected);
+        Assert.NotNull(response.Agent);
+    }
+
+    [Fact]
     public async Task Insert_requires_dog()
     {
         var (_, owner) = await DogWithOwner();
@@ -191,12 +219,13 @@ public class DogWeightServiceTests : IDisposable
     {
         public List<(int DogId, double Weight)> Ticks { get; } = [];
         public Exception? Failure { get; set; }
+        public CalorieAgentResponse? Next { get; set; }
 
         public Task<CalorieAgentResponse> TickAsync(Dog dog, DogWeight weight)
         {
             if (Failure is not null) throw Failure;
             Ticks.Add((dog.Id, weight.Weight));
-            return Task.FromResult(new CalorieAgentResponse());
+            return Task.FromResult(Next ?? new CalorieAgentResponse());
         }
 
         public Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to) => throw new NotSupportedException();

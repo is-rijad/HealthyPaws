@@ -1,4 +1,5 @@
 using HealhtyPaws.Models.Requests.DogWeight;
+using HealhtyPaws.Models.Responses.Agent;
 using HealhtyPaws.Models.Responses.DogWeight;
 using HealhtyPaws.Models.SearchObjects;
 using HealthyPaws.Database;
@@ -8,6 +9,8 @@ using HealthyPaws.Services.CalorieAgent;
 using HealthyPaws.Services.Exceptions;
 using MapsterMapper;
 using Microsoft.EntityFrameworkCore;
+using AgentAction = global::CalorieAgent.Action;
+using AgentResponse = global::CalorieAgent.CalorieAgentResponse;
 
 namespace HealthyPaws.Services.DogWeight;
 
@@ -63,7 +66,29 @@ public class DogWeightService(HealthyPawsDbContext db,
     {
         await base.AfterInsert(entity, request, dbContext);
         var dog = await dbContext.Dogs.FindAsync(entity.DogId);
-        await calorieAgentService.TickAsync(dog!, entity);
+        _lastDecision = await calorieAgentService.TickAsync(dog!, entity);
+        entity.IsRejected = _lastDecision.Action == AgentAction.RequestRemeasure;
+    }
+
+    private AgentResponse? _lastDecision;
+
+    public override async Task<DogWeightResponse> InsertAsync(DogWeightInsertRequest request)
+    {
+        _lastDecision = null;
+        var response = await base.InsertAsync(request);
+        if (_lastDecision is { } decision)
+        {
+            response.Agent = new AgentDecisionResponse(
+                decision.Action.ToString(),
+                decision.PlanChanged,
+                decision.ReasonCodes.ToList(),
+                decision.Explanation,
+                decision.HasNewDailyKcal ? decision.NewDailyKcal : null,
+                decision.HasNewDailyGrams ? decision.NewDailyGrams : null,
+                decision.RequiresHumanReview,
+                decision.NextEvaluationAt?.ToDateTimeOffset() ?? DateTimeOffset.UtcNow);
+        }
+        return response;
     }
 
     protected override async Task BeforeInsert(DogWeightInsertRequest request)

@@ -35,8 +35,7 @@ class _ThirdStepState extends State<ThirdStep>
               provider.bcs = value["bcs"] as int;
               provider.weight = value["weight"] as double;
               widget.completeStep(true);
-            }
-            else {
+            } else {
               widget.completeStep(false);
             }
           },

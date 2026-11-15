@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:healthy_paws/pages/agent/agent_insights_page.dart';
 import 'package:healthy_paws/pages/device/device_page.dart';
 import 'package:healthy_paws/pages/home_page.dart';
 import 'package:healthy_paws/pages/my_profile_page.dart';
@@ -26,6 +27,10 @@ class _MainShellState extends State<MainShell> {
       icon: Icon(Icons.cookie_outlined),
       label: "Poslastice",
     ),
+    NavigationDestination(
+      icon: Icon(Icons.notifications_none),
+      label: "Obavijesti",
+    ),
     NavigationDestination(icon: Icon(Icons.person_outline), label: "Profil"),
   ];
 
@@ -39,6 +44,7 @@ class _MainShellState extends State<MainShell> {
     0 => const HomePage(key: ValueKey("tab_home")),
     1 => const DevicePage(key: ValueKey("tab_devices")),
     2 => const TreatTrackerPage(key: ValueKey("tab_treats")),
+    3 => const AgentInsightsPage(key: ValueKey("tab_agent")),
     _ => const MyProfilePage(key: ValueKey("tab_profile")),
   };
 

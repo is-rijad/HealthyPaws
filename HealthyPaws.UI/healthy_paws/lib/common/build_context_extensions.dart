@@ -21,4 +21,7 @@ extension BuildContextExtensions on BuildContext {
     final locale = Localizations.localeOf(this).toString();
     return DateFormat.Hm(locale).format(date.toLocal());
   }
+
+  String getLocalizedDateTime(DateTime date) =>
+      "${getLocalizedDate(date)} ${getLocalizedTime(date)}";
 }

@@ -1,9 +1,12 @@
 import 'package:healthy_paws/common/resources/access_token_payload.dart';
+import 'package:healthy_paws/resources/responses/agent/agent_alert_response.dart';
+import 'package:healthy_paws/resources/responses/agent/agent_decision_log_response.dart';
 import 'package:healthy_paws/resources/responses/auth/access_token_response.dart';
 import 'package:healthy_paws/resources/responses/breed/breed_response.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/resources/responses/dog/calorie_budget_response.dart';
 import 'package:healthy_paws/resources/responses/dog/dog_response.dart';
+import 'package:healthy_paws/resources/responses/dog/weighing_status_response.dart';
 import 'package:healthy_paws/resources/responses/dog_weight/dog_weight_response.dart';
 import 'package:healthy_paws/resources/responses/treat/treat_response.dart';
 import 'package:healthy_paws/resources/responses/treat_log/treat_log_response.dart';
@@ -21,6 +24,9 @@ final Map<Type, _FromJson> _jsonFactories = {
   DogWeightResponse: (json) => DogWeightResponse.fromJson(json),
   TreatResponse: (json) => TreatResponse.fromJson(json),
   TreatLogResponse: (json) => TreatLogResponse.fromJson(json),
+  AgentAlertResponse: (json) => AgentAlertResponse.fromJson(json),
+  AgentDecisionLogResponse: (json) => AgentDecisionLogResponse.fromJson(json),
+  WeighingStatusResponse: (json) => WeighingStatusResponse.fromJson(json),
   CalorieBudgetResponse: (json) => CalorieBudgetResponse.fromJson(json),
 };
 

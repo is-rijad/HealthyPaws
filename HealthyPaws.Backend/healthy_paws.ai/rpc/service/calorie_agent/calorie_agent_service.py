@@ -12,7 +12,12 @@ logger = logging.getLogger(__name__)
 class CalorieAgentService(CalorieAgentServicer):
     def Tick(self, request, context):
         try:
-            return CalorieAgent(DEFAULT_AGENT_CONFIG).run(request)
+            print("Request received")
+            print(request)
+            response = CalorieAgent(DEFAULT_AGENT_CONFIG).run(request)
+            print("Response received")
+            print(response)
+            return response
         except Exception as e:
             logger.exception("Tick failed")
             context.abort(grpc.StatusCode.INTERNAL, f"Calorie agent error: {e}")

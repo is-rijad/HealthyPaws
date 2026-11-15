@@ -88,6 +88,21 @@ public class DeviceServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task If_the_agent_requests_remeasure_of_the_first_weight_nothing_is_created()
+    {
+        var user = await NewUser();
+        _agent.Next = new CalorieAgentResponse
+        {
+            Action = global::CalorieAgent.Action.RequestRemeasure,
+            Explanation = "Ponovite vaganje"
+        };
+        var ex = await Assert.ThrowsAsync<BadRequestException>(async () => await Sut(user.Id).InsertAsync(await FullRequest()));
+        Assert.Equal("Ponovite vaganje", ex.Message);
+        await using var ctx = _db.Create();
+        Assert.Equal((0, 0, 0, 0, 0), (await ctx.Dogs.CountAsync(), await ctx.Devices.CountAsync(), await ctx.DogMeals.CountAsync(), await ctx.UserDevices.CountAsync(), await ctx.DogWeights.CountAsync()));
+    }
+
+    [Fact]
     public async Task If_the_agent_rejects_the_first_weight_nothing_is_created()
     {
         var user = await NewUser();
@@ -234,11 +249,12 @@ public class DeviceServiceTests : IDisposable
     {
         public List<(string Name, double Weight, int DogId)> Ticks { get; } = [];
         public Exception? Failure { get; set; }
+        public CalorieAgentResponse? Next { get; set; }
         public Task<CalorieAgentResponse> TickAsync(Dog dog, DogWeight weight)
         {
             if (Failure is not null) throw Failure;
             Ticks.Add((dog.Name, weight.Weight, dog.Id));
-            return Task.FromResult(new CalorieAgentResponse());
+            return Task.FromResult(Next ?? new CalorieAgentResponse());
         }
         public Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to) => throw new NotSupportedException();
     }

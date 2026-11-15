@@ -11,6 +11,8 @@ public class DogWeight {
     public double Calorie { get; set; }
     public double? EatenGPerDay { get; set; }
     public double? OfferedGPerDay { get; set; }
+    /// <summary>Agent je zatražio ponovno vaganje; mjerenje se ne koristi kao trenutna težina.</summary>
+    public bool IsRejected { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public Dog? Dog { get; set; }

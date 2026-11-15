@@ -30,22 +30,28 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
     public async Task<CalorieAgentResponse> TickAsync(Database.Entity.Dog dog, Database.Entity.DogWeight weight)
     {
         var client = new global::CalorieAgent.CalorieAgent.CalorieAgentClient(rpcClient.Channel);
-        var request = await PrepareRequest(dog, weight);
-        CalorieAgentResponse response;
-        try
+        // Ako se verzija plana razišla između slanja i obrade odgovora, šalje se jedan novi tick
+        // sa svježim stanjem plana; ako se ni tada ne poklopi, odluka se zabilježi kao PlanVersionMismatch.
+        const int maxAttempts = 2;
+        for (var attempt = 1; ; attempt++)
         {
-            response = await client.TickAsync(request);
-            if (response.HasError)
+            var request = await PrepareRequest(dog, weight);
+            CalorieAgentResponse response;
+            try
             {
-                throw new BadRequestException(response.Explanation);
+                response = await client.TickAsync(request);
+                if (response.HasError)
+                {
+                    throw new BadRequestException(response.Explanation);
+                }
             }
+            catch (RpcException e)
+            {
+                throw new Exception(e.Message, e);
+            }
+            if (await HandleResponse(response, allowRetry: attempt < maxAttempts) is not null)
+                return response;
         }
-        catch (RpcException e)
-        {
-            throw new Exception(e.Message, e);
-        }
-        await HandleResponse(response);
-        return response;
     }
 
     private async Task<CalorieAgentRequest> PrepareRequest(Database.Entity.Dog dog, Database.Entity.DogWeight weight)
@@ -63,7 +69,8 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
             .ToList();
         historyWeights.Reverse();
         var breed = await dbContext.Breeds.SingleAsync(dogBreed => dogBreed.Id == dog.BreedId);
-        var plan = await dbContext.DogPlans.Where(dogPlan => dogPlan.DogId == dog.Id).OrderByDescending(dogPlan => dogPlan.PlanVersion)
+        // AsNoTracking: pri ponovljenom ticku plan se mora pročitati svjež iz baze, a ne iz change trackera.
+        var plan = await dbContext.DogPlans.AsNoTracking().Where(dogPlan => dogPlan.DogId == dog.Id).OrderByDescending(dogPlan => dogPlan.PlanVersion)
             .Include(dogPlan => dogPlan.Learned).FirstOrDefaultAsync();
         var learnedState = plan?.Learned;
         // Plan bez doze (DailyKcal <= 0, npr. kreiran uz prvo odbijeno mjerenje) tretira se kao "plan još ne postoji".
@@ -154,7 +161,8 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
         return request;
     }
 
-    private async Task<AgentOutcome> HandleResponse(CalorieAgentResponse response)
+    /// <returns>Ishod obrade, ili null ako je verzija plana neusklađena i treba poslati novi tick.</returns>
+    private async Task<AgentOutcome?> HandleResponse(CalorieAgentResponse response, bool allowRetry = false)
     {
         var measuredAt = DateTimeOffset.FromUnixTimeSeconds(response.MeasuredAt.Seconds);
         
@@ -165,6 +173,18 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
 
         var plan = await dbContext.DogPlans.Include(dogPlan => dogPlan.Learned)
             .SingleOrDefaultAsync(dogPlan => dogPlan.DogId == response.DogId);
+
+        var isStale = plan?.LastAppliedMeasuredAt is { } appliedAt && measuredAt <= appliedAt;
+        if (allowRetry && !isStale && response.PlanChanged
+            && (response.PlanVersion != (plan?.PlanVersion ?? 0) || !response.HasNewDailyKcal))
+        {
+            if (plan is not null)
+            {
+                dbContext.Entry(plan).State = EntityState.Detached;
+                if (plan.Learned is not null) dbContext.Entry(plan.Learned).State = EntityState.Detached;
+            }
+            return null;
+        }
 
         if (plan is null)
         {
@@ -184,7 +204,10 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
             if (plan.Learned is null) plan.Learned = response.Learned.ToEntity();
             else plan.Learned.CopyFrom(response.Learned);
             plan.LastAppliedMeasuredAt = measuredAt;
-            plan.NextMeasureAt = response.NextEvaluationAt.ToDateTime();
+            // Odbijeno mjerenje znači da vaganje treba ponoviti odmah, a ne za sedam dana.
+            plan.NextMeasureAt = response.Action == Action.RequestRemeasure
+                ? measuredAt.UtcDateTime
+                : response.NextEvaluationAt.ToDateTime();
 
             if (!response.PlanChanged)
             {

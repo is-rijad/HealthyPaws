@@ -28,6 +28,12 @@ public class DogsController(IDogService svc) : BaseCrudController<DogInsertReque
         return Ok(await service.GetCalorieBudgetAsync(id, from, to));
     }
 
+    [HttpGet("{id}/weighing-status")]
+    public async Task<IActionResult> GetWeighingStatus(int id)
+    {
+        return Ok(await service.GetWeighingStatusAsync(id));
+    }
+
     [HttpPut("{id}")]
     public override async Task<IActionResult> Update(int id, [FromBody] DogInsertRequest request)
     {

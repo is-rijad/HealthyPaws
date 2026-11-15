@@ -1,10 +1,11 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'package:healthy_paws/common/resources/json_parsable.dart';
+import 'package:healthy_paws/resources/responses/agent/agent_decision_response.dart';
 
 part 'dog_weight_response.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class DogWeightResponse extends JsonResponse {
   @override
   int id;
@@ -12,12 +13,16 @@ class DogWeightResponse extends JsonResponse {
   double weight;
   double calorie;
   DateTime createdAt;
+  bool isRejected;
+  AgentDecisionResponse? agent;
   DogWeightResponse({
     required this.id,
     required this.bcs,
     required this.weight,
     required this.calorie,
     required this.createdAt,
+    this.isRejected = false,
+    this.agent,
   });
   @override
   Map<String, dynamic> toJson() => _$DogWeightResponseToJson(this);

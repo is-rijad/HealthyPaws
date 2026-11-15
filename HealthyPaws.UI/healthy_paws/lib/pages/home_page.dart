@@ -16,6 +16,7 @@ import 'package:healthy_paws/providers/treat_logs_provider.dart';
 import 'package:healthy_paws/resources/requests/dog/dog_gender.dart';
 import 'package:healthy_paws/resources/responses/device/device_response.dart';
 import 'package:healthy_paws/resources/responses/dog/calorie_budget_response.dart';
+import 'package:healthy_paws/resources/responses/dog/weighing_status_response.dart';
 import 'package:healthy_paws/resources/responses/dog_weight/dog_weight_response.dart';
 import 'package:healthy_paws/resources/responses/treat_log/treat_log_response.dart';
 import 'package:healthy_paws/resources/search_objects/device/device_search_object.dart';
@@ -35,10 +36,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  static const _weightMaxAge = Duration(days: 7);
   static const _sparklinePoints = 10;
 
   int? _dogId;
+  WeighingStatusResponse? _weighingStatus;
   CalorieBudgetResponse? _budget;
   String? _budgetError;
   List<TreatLogResponse> _todayLogs = [];
@@ -81,6 +82,7 @@ class _HomePageState extends State<HomePage> {
               _buildDogChips(dogDevices),
               const SizedBox(height: 8),
               _buildDogHeader(context, selected),
+              _buildWeighingReminder(context, selected),
               _buildWeightCard(context, selected),
               _buildBudgetCard(context),
               _buildDeviceCard(
@@ -177,11 +179,47 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildWeighingReminder(BuildContext context, DeviceResponse device) {
+    final status = _weighingStatus;
+    if (status == null) return const SizedBox.shrink();
+    final next = status.nextMeasureAt;
+    final String text;
+    if (next == null) {
+      text = "Pas još nije vagan. Izvagajte ga da agent napravi plan ishrane.";
+    } else if (status.isDue) {
+      text = status.daysOverdue > 0
+          ? "Vaganje kasni ${status.daysOverdue} ${status.daysOverdue == 1 ? "dan" : "dana"}."
+          : "Vrijeme je za novo vaganje.";
+    } else {
+      text = "Sljedeće vaganje: ${context.getLocalizedDate(next)}";
+    }
+    final color = status.isDue ? Colors.orange : null;
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          status.isDue ? Icons.monitor_weight_outlined : Icons.event_available,
+          color: color,
+        ),
+        title: Text(text, style: TextStyle(color: color)),
+        trailing: status.isDue
+            ? FilledButton(
+                onPressed: () async {
+                  final added = await Constants.navigatorKey.currentState?.push(
+                    MaterialPageRoute(
+                      builder: (_) => DogWeightForm(device: device),
+                    ),
+                  );
+                  if (added == true && mounted) await _loadDogData();
+                },
+                child: const Text("Izvagaj"),
+              )
+            : null,
+      ),
+    );
+  }
+
   Widget _buildWeightCard(BuildContext context, DeviceResponse device) {
     final last = device.lastWeightRecord;
-    final isOutdated =
-        last == null ||
-        DateTime.now().difference(last.createdAt) > _weightMaxAge;
     return Card(
       child: InkWell(
         onTap: () async {
@@ -206,25 +244,6 @@ class _HomePageState extends State<HomePage> {
               if (last != null)
                 Text(
                   "BCS: ${last.bcs} • Izmjereno: ${context.getLocalizedDate(last.createdAt)}",
-                ),
-              if (isOutdated)
-                Row(
-                  spacing: 4,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.orange,
-                      size: 18,
-                    ),
-                    Expanded(
-                      child: Text(
-                        last == null
-                            ? "Nema zabilježenih mjerenja težine."
-                            : "Težina nije mjerena duže od 7 dana.",
-                        style: const TextStyle(color: Colors.orange),
-                      ),
-                    ),
-                  ],
                 ),
               WeightSparkline(values: _weights.map((w) => w.weight).toList()),
             ],
@@ -266,7 +285,8 @@ class _HomePageState extends State<HomePage> {
     final isOver = budget.remaining < 0;
     final progress = budget.dailyBudget <= 0
         ? 0.0
-        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget).clamp(0.0, 1.0);
+        : ((budget.treatCalories + budget.foodCalories) / budget.dailyBudget)
+              .clamp(0.0, 1.0);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 6,
@@ -281,9 +301,7 @@ class _HomePageState extends State<HomePage> {
           value: progress,
           color: isOver ? Colors.red : context.primaryColor,
         ),
-                Text(
-          "Hrana: ${budget.foodCalories} / ${budget.dailyBudget} kcal"
-        ),
+        Text("Hrana: ${budget.foodCalories} / ${budget.dailyBudget} kcal"),
         Text(
           "Poslastice: ${budget.treatCalories} / ${budget.dailyBudget} kcal"
           "${pieces > 0 ? " • $pieces kom." : ""}",
@@ -414,6 +432,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadDogData({bool rebuild = true}) async {
     final dogId = _dogId;
     if (dogId == null) {
+      _weighingStatus = null;
       _budget = null;
       _todayLogs = [];
       _weights = [];
@@ -424,6 +443,16 @@ class _HomePageState extends State<HomePage> {
     final now = DateTime.now();
     final from = DateTime(now.year, now.month, now.day);
     final to = DateTime(now.year, now.month, now.day + 1);
+
+    WeighingStatusResponse? weighingStatus;
+    try {
+      weighingStatus = await context.read<DogsProvider>().getWeighingStatus(
+        dogId,
+      );
+    } on DioException {
+      weighingStatus = null;
+    }
+    if (!mounted) return;
 
     CalorieBudgetResponse? budget;
     String? budgetError;
@@ -463,10 +492,15 @@ class _HomePageState extends State<HomePage> {
     weightsProvider.clearData(weightsSearch);
     await weightsProvider.fetchData(weightsSearch);
 
+    _weighingStatus = weighingStatus;
     _budget = budget;
     _budgetError = budgetError;
     _todayLogs = List.of(logsProvider.searchResult.items);
-    _weights = weightsProvider.searchResult.items.reversed.toList();
+    _weights = weightsProvider.searchResult.items
+        .where((w) => !w.isRejected)
+        .toList()
+        .reversed
+        .toList();
     if (rebuild && mounted) setState(() {});
   }
 }

@@ -72,6 +72,7 @@ class TestGateways:
     def test_measurement_too_soon(self):
         r = run_agent(make_request(history=[week(0.4, 20.0)], plan=make_plan(1250)))
         assert action_name(r) == "NO_CHANGE" and codes(r) == ["MEASUREMENT_TOO_SOON"]
+        assert r.has_error
         assert "dana" in r.explanation
 
     def test_exactly_min_period_is_accepted(self):
@@ -399,7 +400,7 @@ class TestConfigurability:
 
     def test_has_error_is_only_set_for_invalid_input(self):
         """Backend (CalorieAgent.cs) baca BadRequest i NE sprema odgovor kad je has_error=true.
-        Zato smije biti true samo za nevaljan ulaz; sve ostale odluke (i NoChange/Escalate/RequestRemeasure
+        Zato smije biti true samo za nevaljan ulaz (uključujući prerano mjerenje, koje se odbija); sve ostale odluke (i NoChange/Escalate/RequestRemeasure
         zbog sumnjive težine) moraju biti zabilježene."""
         stable = run_agent(make_request(history=HIST_STABLE, plan=make_plan(1250), intake=GOOD_INTAKE))
         initial = run_agent(make_request())
@@ -409,7 +410,6 @@ class TestConfigurability:
 
         benign_stops = {
             "dead zone": make_request(history=HIST_STABLE, plan=make_plan(1250), intake=GOOD_INTAKE),
-            "too soon": make_request(history=[week(0.3, 20)], plan=make_plan(1250)),
             "no intake": make_request(history=HIST_STABLE, plan=make_plan(1250), intake=None),
             "puppy": make_request(life_stage="puppy"),
             "reduced appetite": make_request(history=HIST_STABLE, plan=make_plan(1250), intake=make_intake(eaten=200, offered=380)),
@@ -424,5 +424,6 @@ class TestConfigurability:
             "negative weight": make_request(weight=-1),
             "bad bcs": make_request(bcs=4),
             "bad food kcal": make_request(food_kcal=100),
+            "too soon": make_request(history=[week(0.3, 20)], plan=make_plan(1250)),
         }.items():
             assert run_agent(request).has_error, name

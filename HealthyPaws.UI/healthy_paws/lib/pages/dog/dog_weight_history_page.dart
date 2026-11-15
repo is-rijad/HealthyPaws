@@ -219,11 +219,18 @@ class _DogWeightHistoryPageState extends State<DogWeightHistoryPage> {
   Widget _buildItem(BuildContext context, DogWeightResponse item) {
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.monitor_weight_outlined),
-        title: Text("${item.weight} kg"),
+        leading: Icon(
+          item.isRejected ? Icons.error_outline : Icons.monitor_weight_outlined,
+          color: item.isRejected ? Colors.orange : null,
+        ),
+        title: Text(
+          item.isRejected
+              ? "${item.weight} kg (odbijeno, ponovite vaganje)"
+              : "${item.weight} kg",
+        ),
         subtitle: Text(
           "BCS: ${item.bcs} • ${item.calorie} kcal/100g\n"
-          "${context.getLocalizedDate(item.createdAt)} ${context.getLocalizedTime(item.createdAt)}",
+          "${context.getLocalizedDateTime(item.createdAt)}",
         ),
         isThreeLine: true,
       ),

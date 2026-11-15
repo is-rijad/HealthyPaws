@@ -14,7 +14,7 @@ class FourthStep extends StatefulWidget with WizardStep {
 
 class _FourthStepState extends State<FourthStep>
     with AutomaticKeepAliveClientMixin {
-  static const _maxMeals = 5;
+  static const _maxMeals = 4;
   static const _presets = <int, List<TimeOfDay>>{
     1: [TimeOfDay(hour: 8, minute: 0)],
     2: [TimeOfDay(hour: 8, minute: 0), TimeOfDay(hour: 18, minute: 0)],
@@ -29,13 +29,6 @@ class _FourthStepState extends State<FourthStep>
       TimeOfDay(hour: 17, minute: 0),
       TimeOfDay(hour: 21, minute: 0),
     ],
-    5: [
-      TimeOfDay(hour: 7, minute: 0),
-      TimeOfDay(hour: 10, minute: 0),
-      TimeOfDay(hour: 13, minute: 0),
-      TimeOfDay(hour: 17, minute: 0),
-      TimeOfDay(hour: 20, minute: 0),
-    ],
   };
 
   late List<TimeOfDay> _times;
@@ -44,7 +37,18 @@ class _FourthStepState extends State<FourthStep>
   double? get _calorie =>
       double.tryParse(_calorieController.text.trim().replaceAll(',', '.'));
 
-  bool get _isValid => !_hasDuplicates && (_calorie ?? 0) > 0;
+  bool get _isValid => !_hasDuplicates && !_tooClose && (_calorie ?? 0) > 0;
+
+  static const _minGapMinutes = 3 * 60;
+
+  bool get _tooClose {
+    if (_times.length < 2) return false;
+    final m = _times.map(_minutes).toList()..sort();
+    for (var i = 1; i < m.length; i++) {
+      if (m[i] - m[i - 1] < _minGapMinutes) return true;
+    }
+    return m.first + 24 * 60 - m.last < _minGapMinutes;
+  }
 
   bool get _hasDuplicates =>
       _times.map(_minutes).toSet().length != _times.length;
@@ -100,7 +104,7 @@ class _FourthStepState extends State<FourthStep>
     super.build(context);
     return WizardStepLayout(
       title: "Ishrana psa",
-      subtitle: "Okvirno: koliko puta dnevno jede, u koje vrijeme i koju hranu koristi.",
+      subtitle: "Okvirno: koliko puta dnevno jede, najranije vrijeme obroka i koju hranu koristi.",
       children: [
         Wrap(
           spacing: 8,
@@ -145,6 +149,11 @@ class _FourthStepState extends State<FourthStep>
         if (_hasDuplicates)
           const Text(
             "Vremena obroka moraju biti različita!",
+            style: TextStyle(color: Colors.red),
+          )
+        else if (_tooClose)
+          const Text(
+            "Vremena obroka moraju biti udaljena najmanje 3 sata!",
             style: TextStyle(color: Colors.red),
           ),
       ],

@@ -6,12 +6,14 @@ class Explanations:
         "INITIAL_PLAN": "Početni plan iz formule (RER × faktori) prilagođen stanju psa: {new_kcal:.0f} kcal/dan.",
         "FIRST_MEASUREMENT": "Prvo mjerenje: još nema historije za procjenu, plan ostaje isti.",
         "STALE_MEASUREMENT": "Mjerenje nije novije od zadnjeg obrađenog, preskačem ga.",
-        "MEASUREMENT_TOO_SOON": "Od zadnjeg mjerenja prošlo je samo {days_since_previous:.1f} dana, što je premalo za pouzdan zaključak.",
-        "INVALID_MEASUREMENT": "Unesena težina ili BCS nisu valjani ({detail}). Molim ponovite vaganje.",
-        "INVALID_INPUT": "Ulazni podaci nisu valjani ({detail}). Potrebna je provjera.",
+        "MEASUREMENT_TOO_SOON": (
+            "Od zadnjeg mjerenja prošlo je samo {days_since_previous:.1f} dana. "
+            "Novo vaganje je moguće najranije nakon {min_period_days:.0f} dana."),
+        "INVALID_MEASUREMENT": "Unesena težina ili BCS nisu valjani: {detail}. Molimo ponovite vaganje.",
+        "INVALID_INPUT": "Podaci nisu valjani: {detail}. Provjerite unos ili kontaktirajte podršku.",
         "WEIGHT_OUT_OF_RANGE_CONFIRMED": (
-            "Ponovljeno vaganje potvrđuje težinu od {weight:.1f} kg, koja nije u skladu sa zadanim rasponom ({detail}). "
-            "Provjerite raspon težine (MinWeight/MaxWeight) i podatke o psu."),
+            "Ponovljeno vaganje potvrđuje težinu od {weight:.1f} kg, koja nije u skladu s očekivanim rasponom: {detail}. "
+            "Provjerite težinu i podatke o psu i pasmini."),
         "INTAKE_IMPLAUSIBLE": (
             "Zabilježeni unos hranilice ({eaten_kcal:.0f} kcal/dan) nije vjerodostojan za psa ove veličine. "
             "Provjerite hranilicu i psa; plan ne mijenjam."),
