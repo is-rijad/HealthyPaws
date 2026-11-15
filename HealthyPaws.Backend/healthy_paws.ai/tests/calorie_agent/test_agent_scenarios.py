@@ -283,6 +283,32 @@ class TestSafety:
         assert action_name(r) == "ESCALATE" and codes(r)[0] in ("UNEXPLAINED_WEIGHT_LOSS",)
         assert r.requires_human_review and "pregled kod veterinara" in r.explanation
 
+    def test_unexplained_loss_escalates_and_raises_plan_towards_estimate(self):
+        # plan 1250 je ispod procijenjene potrošnje (~1600): eskalacija ne smije zamrznuti plan dok pas mršavi
+        hist = [week(4, 20.0), week(3, 19.6), week(2, 19.2), week(1, 18.8)]
+        r = run_agent(make_request(weight=18.4, history=hist, intake=make_intake(eaten=360, offered=380),
+                                   plan=make_plan(1250, mer_estimate_kcal=1600.0, variance_kcal2=2500.0)))
+        assert action_name(r) == "ESCALATE" and r.requires_human_review
+        assert codes(r)[0] == "UNEXPLAINED_WEIGHT_LOSS"  # .NET bira kategoriju upozorenja po prvom kodu
+        assert "LOSS_HOLD_RAISED" in codes(r)
+        assert r.plan_changed and 1250 < r.new_daily_kcal <= 1250 * 1.10 + 1e-6
+
+    def test_unexplained_loss_never_lowers_plan(self):
+        hist = [week(4, 20.0), week(3, 19.6), week(2, 19.2), week(1, 18.8)]
+        # pas jede malo (230 g), pa je naučena potrošnja (~1200) ispod plana 1250: doza se ne smije sniziti
+        r = run_agent(make_request(weight=18.4, history=hist, intake=make_intake(eaten=230, offered=240),
+                                   plan=make_plan(1250, mer_estimate_kcal=1250.0, variance_kcal2=1e9)))
+        assert r.learned.mer_estimate_kcal < 1250
+        assert action_name(r) == "ESCALATE" and not r.plan_changed
+        assert "LOSS_HOLD_RAISED" not in codes(r) and r.new_daily_kcal == pytest.approx(1250.0)
+
+    def test_rapid_loss_on_diet_does_not_touch_plan(self):
+        hist = [week(4, 33.0, 9), week(3, 32.0, 9), week(2, 31.0, 9), week(1, 30.0, 9)]
+        r = run_agent(make_request(weight=29.0, bcs=9, history=hist, min_weight=18, max_weight=24,
+                                   plan=make_plan(1250, mer_estimate_kcal=1800.0, variance_kcal2=2500.0),
+                                   intake=make_intake(eaten=300, offered=330)))
+        assert "RAPID_LOSS_ON_DIET" in codes(r) and not r.plan_changed
+
     def test_same_decline_for_overweight_dog_on_diet_is_not_alarming(self):
         hist = [week(4, 30.0, 9), week(3, 29.7, 9), week(2, 29.4, 9), week(1, 29.1, 9)]
         r = run_agent(make_request(weight=28.8, bcs=9, history=hist, plan=make_plan(1250),

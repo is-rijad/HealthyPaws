@@ -401,3 +401,4 @@ FodyWeavers.xsd
 *.sln.iml
 .idea/
 HealthyPaws.WebApi/.env
+healthy_paws.ai/calorie_agent_simulation/RESULTS.md

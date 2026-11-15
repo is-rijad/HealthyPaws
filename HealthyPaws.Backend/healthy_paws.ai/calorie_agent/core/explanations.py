@@ -41,6 +41,9 @@ class Explanations:
             "Procijenjena potrošnja ({mer_estimate:.0f} kcal) jako odstupa od formule ({prior_mer:.0f} kcal). "
             "Preporučuje se provjera."),
         "UNEXPLAINED_WEIGHT_LOSS": "Težina stalno pada ({slope:+.2f} kg/sedmično) iako to nije cilj. Preporučuje se pregled kod veterinara.",
+        "LOSS_HOLD_RAISED": (
+            "Dok se ne utvrdi uzrok, dnevna doza se podiže na {new_kcal:.0f} kcal (prema procijenjenoj potrošnji), "
+            "da pas ne nastavi mršavjeti."),
         "RAPID_LOSS_ON_DIET": "Gubitak težine je brži od sigurnog ({slope:+.2f} kg/sedmično). Preporučuje se provjera.",
         "PLAN_AT_BOUND_NO_PROGRESS": (
             "Unos je na sigurnosnoj granici ({new_kcal:.0f} kcal), a težina se ne kreće prema cilju. "

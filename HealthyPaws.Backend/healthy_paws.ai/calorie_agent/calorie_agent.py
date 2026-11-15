@@ -9,6 +9,7 @@ from calorie_agent.core.classification.classify import Classify
 
 from calorie_agent.core.decisions import Decisions
 from calorie_agent.core.estimator import Estimator
+from calorie_agent.core.guardrails import GuardRails
 from calorie_agent.core.initial_plan import InitialPlan
 from calorie_agent.core.regulator import Regulator
 from calorie_agent.core.trend import Trend, fit
@@ -92,6 +93,12 @@ class CalorieAgent:
         )
         self.weight_sigma_kg = (self.calculations.weight_sigma(self.measurement.weight)
                                 if self.measurement.weight > 0 else self.config.weight_sigma_abs_kg)
+        if self.measurement.weight > 0:
+            # Šum vage može biti veći od konfiguriranog: procjena iz historije ga samo povećava, nikad smanjuje.
+            noise_points = [(record.measured_at, record.weight_kg) for record in self.history[-self.config.trend_points:]]
+            noise_points.append((self.measurement.measured_at, self.measurement.weight))
+            self.weight_sigma_kg = self.calculations.empirical_weight_sigma(noise_points, self.weight_sigma_kg)
+            self.diagnostics["weight_sigma_kg"] = self.weight_sigma_kg
 
     def _validate(self) -> CalorieAgentResponse | None:
         issues = TickRequestValidator.validate(self.request, self.config)
@@ -222,7 +229,7 @@ class CalorieAgent:
                                  + self.measurement.measured_at.timestamp()) / 2.0
                 window_span_weeks = max((recent_time_s - baseline_time_s) / self.SECONDS_PER_WEEK, 1.0)
                 self.context["slope"] = -window_loss_kg / window_span_weeks
-                return self.decisions.stop(Action.ESCALATE, weight_loss_code)
+                return self._escalate_weight_loss(weight_loss_code)
 
         trend = self._trend()
         is_stable = True
@@ -241,9 +248,30 @@ class CalorieAgent:
             loss_alarm_threshold = (trend_loss_limit_pct / 100.0 * self.measurement.weight
                                     + self.config.trend_alarm_sigma * trend.se_kg_per_week)
             if trend.slope_kg_per_week < -loss_alarm_threshold:
-                return self.decisions.stop(Action.ESCALATE, weight_loss_code)
+                return self._escalate_weight_loss(weight_loss_code)
 
         return None
+
+    def _escalate_weight_loss(self, weight_loss_code: str) -> CalorieAgentResponse:
+        """Eskalacija zbog gubitka težine koji NIJE cilj: vlasnik/veterinar se obavještava (prvi reason kod ostaje
+        isti), ali plan se ne smije ostaviti zamrznut ispod procijenjene potrošnje dok pas dalje mršavi.
+        Doza se samo podiže (nikad snižava) prema procijenjenoj potrošnji, u granicama koraka i koridora.
+        Za gubitak na dijeti (RAPID_LOSS_ON_DIET) doza se ne dira: tamo je gubitak namjeran, samo prebrz."""
+        current_kcal = self.plan.current_daily_kcal if self.plan is not None else None
+        if weight_loss_code != "UNEXPLAINED_WEIGHT_LOSS" or current_kcal is None:
+            return self.decisions.stop(Action.ESCALATE, weight_loss_code)
+
+        target_kcal = max(current_kcal, self.context["mer_estimate"])
+        classification = self.context["classification"]
+        guardrails = GuardRails(self)
+        step_pct = guardrails.step_limit_pct(self.learned.n_updates, classification.conflict)
+        result = guardrails.apply(target_kcal, current_kcal, self.context["floor"], self.context["ceiling"], step_pct)
+        self.reason_codes.append(weight_loss_code)
+        if not result.changed or result.kcal <= current_kcal:
+            return self.decisions.finish(Action.ESCALATE)
+        self.reason_codes.append("LOSS_HOLD_RAISED")
+        self.context["step_pct"] = step_pct
+        return self.decisions.finish(Action.ESCALATE, kcal=result.kcal, plan_changed=True)
 
     def _was_not_ideal(self) -> bool:
         """Pas je "upravo stigao na cilj" ako je prošli put imao neidealan BCS, a sada ima idealan."""

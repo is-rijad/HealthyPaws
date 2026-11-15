@@ -23,7 +23,7 @@ class Decisions:
         return self.finish(action, has_error=has_error)
 
     def finish(self, action: Action, *, kcal: Optional[float] = None,
-               has_error: Optional[bool] = None) -> CalorieAgentResponse:
+               has_error: Optional[bool] = None, plan_changed: Optional[bool] = None) -> CalorieAgentResponse:
         agent = self.agent
         daily_kcal = agent.plan.current_daily_kcal if kcal is None and agent.plan is not None else kcal
 
@@ -47,7 +47,7 @@ class Decisions:
             correlation_id=agent.request.correlation_id,
             plan_version=agent.plan.plan_version if agent.plan else None,
             action=action._name_,
-            plan_changed=action in PLAN_CHANGING,
+            plan_changed=action in PLAN_CHANGING if plan_changed is None else plan_changed,
             new_daily_kcal=daily_kcal,
             new_daily_grams=daily_grams,
             reason_codes=tuple(unique_reason_codes),

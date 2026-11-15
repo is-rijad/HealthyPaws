@@ -277,7 +277,7 @@ class TestController:
         assert ctrl(BodyState.OVERWEIGHT, 25).desired_rate_kg_per_week(20) == 0.0
 
     def test_underweight_gain_capped(self):
-        assert ctrl(BodyState.UNDERWEIGHT, 20).desired_rate_kg_per_week(14) == pytest.approx(0.14)
+        assert ctrl(BodyState.UNDERWEIGHT, 20).desired_rate_kg_per_week(14) == pytest.approx(CFG.max_gain_pct_per_week / 100.0 * 14)
 
     def test_underweight_never_negative(self):
         assert ctrl(BodyState.UNDERWEIGHT, 10).desired_rate_kg_per_week(14) == 0.0
@@ -323,3 +323,40 @@ def defaultdict_ctx():
     return dict(new_kcal=1000.0, days_since_previous=3.0, detail="d", weight=20.0, prev_weight=18.0, eaten_kcal=900.0,
                 bcs=9, eaten_ratio=0.5, z=4.0, mer_estimate=1200.0, prior_mer=1000.0, slope=-0.4, rate=-0.1,
                 step_pct=5.0, floor=700.0, ceiling=2000.0)
+
+
+class TestEmpiricalWeightSigma:
+    calc = Calculations(CFG)
+    T0 = datetime(2026, 1, 5, 8, 0, tzinfo=timezone.utc)
+
+    def points(self, weights, gap_days=7):
+        from datetime import timedelta
+        return [(self.T0 + timedelta(days=gap_days * i), w) for i, w in enumerate(weights)]
+
+    def test_too_few_points_returns_floor(self):
+        assert self.calc.empirical_weight_sigma(self.points([20, 21, 19, 22, 20]), 0.15) == 0.15
+
+    def test_never_below_floor(self):
+        assert self.calc.empirical_weight_sigma(self.points([20.0] * 9), 0.15) == 0.15
+
+    def test_linear_trend_without_noise_is_not_noise(self):
+        weights = [20.0 - 0.2 * i for i in range(9)]
+        assert self.calc.empirical_weight_sigma(self.points(weights), 0.15) == 0.15
+
+    def test_recovers_large_noise_with_trend(self):
+        import random
+        rng = random.Random(3)
+        weights = [20.0 - 0.2 * i + rng.gauss(0, 0.4) for i in range(9)]
+        sigma = self.calc.empirical_weight_sigma(self.points(weights), 0.15)
+        assert 0.25 < sigma < 0.7
+
+    def test_capped_at_max_scale(self):
+        weights = [20, 25, 15, 26, 14, 27, 13, 28, 12]
+        assert self.calc.empirical_weight_sigma(self.points(weights), 0.15) == pytest.approx(
+            CFG.noise_max_scale * 0.15)
+
+    def test_skipped_week_does_not_look_like_noise(self):
+        from datetime import timedelta
+        times = [self.T0 + timedelta(days=d) for d in (0, 7, 14, 28, 35, 42)]
+        weights = [20.0 - 0.2 * (d / 7) for d in (0, 7, 14, 28, 35, 42)]
+        assert self.calc.empirical_weight_sigma(list(zip(times, weights)), 0.15) == 0.15
