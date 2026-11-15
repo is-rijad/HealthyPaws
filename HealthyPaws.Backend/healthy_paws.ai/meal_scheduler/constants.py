@@ -1,4 +1,4 @@
-FEATURE_DIM = 8              # [bias, hoursSince, avgEaten, treatShare (sve centrirano), mealIndex==0, mealIndex==1, mealIndex==2, mealIndex==3]
+FEATURE_DIM = 7              # [bias, hoursSince, avgEaten, treatShare (sve centrirano), mealIndex==1, mealIndex==2, mealIndex==3]; mealIndex 0 je referentna kategorija (pokriva je bias)
 MAX_OFFSET_MIN = 60          # guardrail: pomak od osnovnog termina je najviše ±60 min
 MAX_ARMS = 5
 HOURS_SCALE = 12.0           # hoursSinceLastMeal / 12, ograničeno na [0,1]

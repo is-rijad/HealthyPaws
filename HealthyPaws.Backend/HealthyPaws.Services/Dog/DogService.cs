@@ -23,7 +23,7 @@ public class DogService(HealthyPawsDbContext dbContext, IMapper mapper, Authoriz
         queryable = await base.ApplyFilter(queryable, searchObject);
         if (!string.IsNullOrEmpty(searchObject.Contains))
         {
-            queryable = queryable.Where(d => d.Name.Contains(searchObject.Contains, StringComparison.InvariantCultureIgnoreCase));
+            queryable = queryable.Where(d => d.Name.Contains(searchObject.Contains));
         }
         var userId = authorizationService.GetUserId();
         return queryable.Where(d => dbContext.UserDevices.Any(ud => ud.UserId == userId && ud.Device!.DogId == d.Id));

@@ -56,7 +56,6 @@ class Explanations:
         "CONFLICT_STEP_LIMIT": "BCS i težina se ne slažu u potpunosti, pa su koraci manji (najviše {step_pct:.0f}%).",
         "FLOOR_APPLIED": "Unos ne smije pasti ispod sigurnosnog minimuma ({floor:.0f} kcal).",
         "CEILING_APPLIED": "Unos ne smije preći sigurnosni maksimum ({ceiling:.0f} kcal).",
-        "BOUNDS_OVERRIDE_STEP": "Sigurnosne granice imaju prednost nad ograničenjem koraka.",
         "PLAN_OUTSIDE_SAFE_BOUNDS": "Prethodni plan je bio izvan sigurnosnih granica i vraćen je unutar njih.",
     }
 

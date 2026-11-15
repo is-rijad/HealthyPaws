@@ -107,9 +107,7 @@ abstract class BaseProvider<
   }
 
   void updateLocally(TResponse entity) {
-    final index = searchResult.items.indexOf(
-      searchResult.items.firstWhere((i) => i.id == entity.id),
-    );
+    final index = searchResult.items.indexWhere((i) => i.id == entity.id);
     if (index == -1) {
       return;
     }
@@ -128,9 +126,7 @@ abstract class BaseProvider<
   }
 
   void deleteLocally(int id) {
-    final index = searchResult.items.indexOf(
-      searchResult.items.firstWhere((i) => i.id == id),
-    );
+    final index = searchResult.items.indexWhere((i) => i.id == id);
     if (index == -1) {
       return;
     }

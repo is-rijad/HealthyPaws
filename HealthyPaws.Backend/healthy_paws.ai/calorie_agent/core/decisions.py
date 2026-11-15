@@ -16,9 +16,11 @@ class Decisions:
     def __init__(self, agent: ca.CalorieAgent):
         self.agent = agent
 
-    def stop(self, action: Action, *reason_codes: str) -> CalorieAgentResponse:
+    def stop(self, action: Action, *reason_codes: str, has_error: bool = False) -> CalorieAgentResponse:
+        """Završava obradu bez promjene plana. has_error je samo za nevaljan ulaz (odgovor se ne sprema);
+        ostale odluke (NoChange, Escalate, RequestRemeasure...) su normalan ishod i backend ih bilježi."""
         self.agent.reason_codes.extend(reason_codes)
-        return self.finish(action, has_error=True)
+        return self.finish(action, has_error=has_error)
 
     def finish(self, action: Action, *, kcal: Optional[float] = None,
                has_error: Optional[bool] = None) -> CalorieAgentResponse:

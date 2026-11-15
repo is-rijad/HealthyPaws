@@ -103,8 +103,8 @@ class CalorieAgent:
             if blocking_issue.severity is Severity.REMEASURE:
                 if blocking_issue.confirmable:
                     return self.decisions.confirm_or_remeasure()
-                return self.decisions.stop(Action.REQUEST_REMEASURE, "INVALID_MEASUREMENT")
-            return self.decisions.stop(Action.ESCALATE, "INVALID_INPUT")
+                return self.decisions.stop(Action.REQUEST_REMEASURE, "INVALID_MEASUREMENT", has_error=True)
+            return self.decisions.stop(Action.ESCALATE, "INVALID_INPUT", has_error=True)
 
         if self.profile.life_stage.strip().lower() == "puppy" or self.profile.pregnant_or_lactating:
             return self.decisions.stop(Action.ESCALATE, "UNSUPPORTED_LIFE_STAGE")

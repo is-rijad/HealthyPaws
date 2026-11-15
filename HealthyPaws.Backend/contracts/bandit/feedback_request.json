@@ -1,0 +1,22 @@
+{
+  "decisionId": "11111111-1111-1111-1111-111111111111",
+  "dogId": "7",
+  "arm": 60,
+  "context": {
+    "hoursSinceLastMeal": 4.5,
+    "avgEatenFraction": 0.8,
+    "treatBudgetShare": 0.05,
+    "baselineHour": 10,
+    "mealIndex": 2
+  },
+  "outcome": {
+    "dispensedG": 120,
+    "eatenG": 95,
+    "latencyS": 180
+  },
+  "state": {
+    "d": 7,
+    "version": 3,
+    "arms": {}
+  }
+}

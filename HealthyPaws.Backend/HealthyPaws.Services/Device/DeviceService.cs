@@ -19,9 +19,11 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
 
         await BeforeInsert(request);
 
-        var dog = (await dbContext.Devices.Include(d => d.Dog).FirstOrDefaultAsync(d => d.MacAddress == request.MacAddress))?.Dog;
+        var existingDevice = await dbContext.Devices.Include(d => d.Dog).FirstOrDefaultAsync(d => d.MacAddress == request.MacAddress);
+        var dog = existingDevice?.Dog;
         if (request.Dog != null && request.DogWeight != null && request.MealTimes != null)
         {
+            existingDevice = null; // novi pas dobija vlastiti zapis uređaja
             dog = mapper.Map<Database.Entity.Dog>(request.Dog);
             await dbContext.Dogs.AddAsync(dog);
             await dbContext.SaveChangesAsync();
@@ -44,19 +46,23 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
             await dbContext.SaveChangesAsync();
         }
 
-        var entityEntry = await dbContext.Devices.AddAsync(new Database.Entity.Device()
+        if (dog is null)
+            throw new BadRequestException("Uređaj nije pronađen. Unesite podatke o psu, težini i obrocima!");
+
+        // Pridruživanje postojećem uređaju: dijeli se isti zapis (unique indeks DogId+MacAddress), dodaje se samo veza s korisnikom.
+        var device = existingDevice ?? (await dbContext.Devices.AddAsync(new Database.Entity.Device()
         {
-            DogId = dog!.Id,
+            DogId = dog.Id,
             MacAddress = request.MacAddress,
             IsConnected = true
-        });
-        await AfterInsert(entityEntry.Entity, request, dbContext);
+        })).Entity;
+        await AfterInsert(device, request, dbContext);
         await dbContext.SaveChangesAsync();
 
 
         await dbContext.UserDevices.AddAsync(new Database.Entity.UserDevice()
         {
-            DeviceId = entityEntry.Entity.Id,
+            DeviceId = device.Id,
             UserId = authorizationService.GetUserId()
         });
 
@@ -64,8 +70,8 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
 
         await transaction.CommitAsync();
 
-        await PrepareForResponse(entityEntry.Entity, dbContext);
-        return MapToResponseModel<DeviceResponse>(entityEntry.Entity, mapper);
+        await PrepareForResponse(device, dbContext);
+        return MapToResponseModel<DeviceResponse>(device, mapper);
     }
 
     public async Task<string> GetDeviceMac(int dogId)
@@ -120,8 +126,8 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
         if (request is { Dog: not null, DogWeight: not null })
         {
             var mealTimes = request.MealTimes;
-            if (mealTimes is not { Count: >= 1 and <= 5 })
-                throw new BadRequestException("Unesite od 1 do 5 obroka dnevno!");
+            if (mealTimes is not { Count: >= 1 and <= 4 })
+                throw new BadRequestException("Unesite od 1 do 4 obroka dnevno!");
             if (mealTimes.Distinct().Count() != mealTimes.Count)
                 throw new BadRequestException("Vremena obroka moraju biti različita!");
         }

@@ -6,4 +6,5 @@
   <Project Path="HealthyPaws.Database/HealthyPaws.Database.csproj" Id="698a81fc-de63-4755-ad59-bd7927be22c4" />
   <Project Path="HealthyPaws.Services/HealthyPaws.Services.csproj" Id="0fb98bfc-8881-4198-a608-bb617441d4e8" />
   <Project Path="HealthyPaws.WebApi/HealthyPaws.WebApi.csproj" />
+  <Project Path="HealthyPaws.Tests/HealthyPaws.Tests.csproj" />
 </Solution>

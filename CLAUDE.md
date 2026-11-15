@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-HealthyPaws is a dog health/feeding app tied to a smart device (identified by MAC address). Monorepo with two independent projects: a .NET Web API (`HealthyPaws.Backend/`) and a Flutter client (`HealthyPaws.UI/healthy_paws/`). There are no automated tests in either project. User-facing strings and exception messages are in Bosnian (e.g. `"Nije pronađeno!"`).
+HealthyPaws is a dog health/feeding app tied to a smart device (identified by MAC address). Monorepo with two independent projects: a .NET Web API (`HealthyPaws.Backend/`) and a Flutter client (`HealthyPaws.UI/healthy_paws/`). User-facing strings and exception messages are in Bosnian (e.g. `"Nije pronađeno!"`).
 
 ## Backend (`HealthyPaws.Backend/`, .NET 10, SQL Server, EF Core)
 
@@ -28,6 +28,18 @@ Layered projects: `WebApi` (controllers, `ExceptionFilter`) → `Services` → `
 - **Ownership model**: a user owns dogs *through devices* (`UserDevice` → `Device.DogId`). Service-level access checks and filters (e.g. `DogService`) query `UserDevices` rather than a direct user→dog FK.
 - **Errors**: throw `NotFoundException` / `BadRequestException` / `UnauthorizedException`; `ExceptionFilter` converts them to HTTP responses.
 - **Calorie budget** (`DogService.GetCalorieBudgetAsync`): `70 * weight^0.75 * ActivityStatus` (latest `DogWeight`) minus calories from `TreatLog`s in the period.
+
+## Tests
+
+```bash
+cd HealthyPaws.Backend/healthy_paws.ai && .venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest   # calorie agent, LinUCB, MQ handlers, gRPC
+cd HealthyPaws.Backend && dotnet test HealthyPaws.Tests                    # xUnit; SQLite in-memory, no Docker needed
+cd HealthyPaws.UI/healthy_paws && flutter test
+```
+
+- `HealthyPaws.Tests/CalorieAgentE2E` starts the real Python gRPC agent from `healthy_paws.ai/.venv` (via `tests/serve_grpc.py`); it skips itself if the venv is missing.
+- C# <-> Python LinUCB contract: golden JSON in `HealthyPaws.Backend/contracts/bandit/`, read by both `BanditContractTests` (C#) and `tests/meal_scheduler/test_contract.py`. Regenerate C# request files with `UPDATE_CONTRACTS=1 dotnet test`.
+- Calorie agent `has_error=true` means *invalid input only* (backend throws `BadRequestException` and persists nothing). All other decisions (NoChange, Escalate, RequestRemeasure) are normal outcomes that `CalorieAgentService.HandleResponse` logs, including `pending_weight_kg` and alerts.
 
 ## Flutter client (`HealthyPaws.UI/healthy_paws/`)
 

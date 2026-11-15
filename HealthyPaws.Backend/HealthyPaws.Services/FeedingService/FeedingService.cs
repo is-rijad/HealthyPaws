@@ -1,6 +1,7 @@
 using HealhtyPaws.Models.Dto.Bandit;
 using HealthyPaws.Database;
 using HealthyPaws.Services.Bandit;
+using HealthyPaws.Services.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.FeedingService;
@@ -30,8 +31,11 @@ public class FeedingService(HealthyPawsDbContext dbContext) : IFeedingService
 
     public async Task<double> GetPortionGrams(int dogId, int mealIndex)
     {
-        var plan = await dbContext.DogPlans.SingleAsync(it => it.DogId == dogId);
+        var plan = await dbContext.DogPlans.SingleOrDefaultAsync(it => it.DogId == dogId)
+                   ?? throw new NotFoundException("Plan ishrane još nije kreiran!");
         var meals = await dbContext.DogMeals.CountAsync(it => it.DogId == dogId);
+        if (meals == 0)
+            throw new BadRequestException("Pas nema definisane obroke!");
         return plan.DailyKcal / meals; // TODO: Include treats
     }
 }

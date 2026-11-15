@@ -45,7 +45,7 @@ public class BanditData(HealthyPawsDbContext dbContext, TimeProvider clock) : IB
         var local = TimeZoneInfo.ConvertTime(decision.BaselineUtc, tz);
         var baselineHour = local.TimeOfDay.TotalHours;
 
-        return (decision.DogId, decision.MealIndex, new BanditContext(hours, avgEaten, treatShare, baselineHour));
+        return (decision.DogId, decision.MealIndex, new BanditContext(hours, avgEaten, treatShare, baselineHour, decision.MealIndex));
     }
 
     const int AvgMeals = 5;
@@ -71,7 +71,7 @@ public class BanditData(HealthyPawsDbContext dbContext, TimeProvider clock) : IB
             .Select(x => new { x.MealIndex, x.ContextSavedAt, x.HoursSinceLastMeal, x.AvgEatenFraction, x.TreatBudgetShare, x.BaselineHour })
             .SingleAsync();
         if (d.ContextSavedAt is not null)
-            return new BanditContext(d.HoursSinceLastMeal, d.AvgEatenFraction, d.TreatBudgetShare, d.BaselineHour ?? 0);
+            return new BanditContext(d.HoursSinceLastMeal, d.AvgEatenFraction, d.TreatBudgetShare, d.BaselineHour ?? 0, d.MealIndex);
         
         var (_, _, ctx) = await BuildContext(decisionId);
         await SaveContext(decisionId, ctx);

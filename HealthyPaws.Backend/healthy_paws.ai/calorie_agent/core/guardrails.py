@@ -55,7 +55,8 @@ class GuardRails:
         bounded_kcal = GuardRails._clamp(kcal, floor_kcal, ceiling_kcal)
         reference_in_bounds = floor_kcal <= reference_kcal <= ceiling_kcal
         if bounded_kcal != kcal:
-            reason_codes.append("PLAN_OUTSIDE_SAFE_BOUNDS" if not reference_in_bounds else "BOUNDS_OVERRIDE_STEP")
+            # Korak ide prema referenci, pa iz granica može izaći samo ako je referenca već bila izvan njih.
+            reason_codes.append("PLAN_OUTSIDE_SAFE_BOUNDS")
         kcal = bounded_kcal
 
         # Promjena manja od praga je ispod šuma mjerenja, pa se plan ne dira.

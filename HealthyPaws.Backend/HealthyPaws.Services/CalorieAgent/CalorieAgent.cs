@@ -308,7 +308,8 @@ public class CalorieAgentService(HealthyPawsDbContext dbContext,
 
         var dog = await dbContext.Dogs.AsNoTracking().FirstAsync(dogEntity => dogEntity.Id == dogId);
         var treatCalories = await treatLogService.GetTreatCaloriesAsync(dogId, from, to);
-        var plan = await dbContext.DogPlans.AsNoTracking().SingleAsync(dogPlan => dogPlan.DogId == dogId);
+        var plan = await dbContext.DogPlans.AsNoTracking().SingleOrDefaultAsync(dogPlan => dogPlan.DogId == dogId)
+                   ?? throw new NotFoundException("Plan ishrane još nije kreiran!");
         var eatenToday = await feedingService.CalculateEatenToday(dog.Id);
         
         return new CalorieBudgetResponse(dogId, Math.Round(plan.DailyKcal, 1), treatCalories, eatenToday);

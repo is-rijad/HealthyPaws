@@ -9,8 +9,10 @@ public class DeviceWeightReader(HealthyPawsDbContext dbContext) : IDeviceWeightR
 {
     public async Task<IReadOnlyList<Sample>> Read(int dogId, DateTimeOffset from, DateTimeOffset to)
     {
+        var fromUtc = from.UtcDateTime;
+        var toUtc = to.UtcDateTime;
         return await dbContext.FeedingRecords.Where(it => it.DogId == dogId
-                                                           && it.EatenAt >= from && it.EatenAt <= to)
+                                                           && it.EatenAt >= fromUtc && it.EatenAt <= toUtc)
             .Select(it => new Sample(it.EatenAt.ToUniversalTime(), it.EatenG)).ToListAsync();
     }
 }
