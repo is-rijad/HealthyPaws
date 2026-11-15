@@ -1,5 +1,7 @@
 ﻿using HealthyPaws.Database.Entity;
 using System.Security.Cryptography;
+using System.Text;
+using Konscious.Security.Cryptography;
 using HealhtyPaws.Models.Requests.Auth;
 using HealhtyPaws.Models.Responses.Auth;
 using HealthyPaws.Database;
@@ -14,9 +16,34 @@ public class AuthorizationService(
 {
     private const int HashByteSize = 32;
     private const int SaltByteSize = 16;
-    private const int Iterations = 100000;
 
-    private readonly HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+    private const int MemoryKiB = 19 * 1024;
+    private const int Iterations = 2;
+    private const int Parallelism = 1;
+
+    private static byte[] DeriveHash(string secret, byte[] salt) {
+        using var argon2 = new Argon2id(Encoding.UTF8.GetBytes(secret)) {
+            Salt = salt,
+            MemorySize = MemoryKiB,
+            Iterations = Iterations,
+            DegreeOfParallelism = Parallelism
+        };
+        return argon2.GetBytes(HashByteSize);
+    }
+
+    private static void HashSecret(string secret, out string hash, out string salt) {
+        var saltBytes = RandomNumberGenerator.GetBytes(SaltByteSize);
+        salt = Convert.ToBase64String(saltBytes);
+        hash = Convert.ToBase64String(DeriveHash(secret, saltBytes));
+    }
+
+    private static bool VerifySecret(string secret, string storedHash, string storedSalt) {
+        var actual = DeriveHash(secret, Convert.FromBase64String(storedSalt));
+        byte[] expected;
+        try { expected = Convert.FromBase64String(storedHash); }
+        catch (FormatException) { return false; }
+        return CryptographicOperations.FixedTimeEquals(actual, expected);
+    }
 
     public async Task<AccessTokenResponse> Login(UserLoginRequest request) {
         Database.Entity.User? user = await context.Users.FirstOrDefaultAsync(u =>
@@ -74,24 +101,11 @@ public class AuthorizationService(
 
     }
 
-    public void HashRefreshToken(string refreshToken, out string hash, out string salt) {
-        using var rng = RandomNumberGenerator.Create();
-        var saltBytes = new byte[SaltByteSize];
-        rng.GetBytes(saltBytes);
-        salt = Convert.ToBase64String(saltBytes);
+    public void HashRefreshToken(string refreshToken, out string hash, out string salt) =>
+        HashSecret(refreshToken, out hash, out salt);
 
-        using var pbkdf2 = new Rfc2898DeriveBytes(refreshToken, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        hash = Convert.ToBase64String(hashBytes);
-    }
-
-    public bool VerifyRefreshToken(string refreshToken, string storedHash, string storedSalt) {
-        var saltBytes = Convert.FromBase64String(storedSalt);
-        using var pbkdf2 = new Rfc2898DeriveBytes(refreshToken, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        var hash = Convert.ToBase64String(hashBytes);
-        return hash == storedHash;
-    }
+    public bool VerifyRefreshToken(string refreshToken, string storedHash, string storedSalt) =>
+        VerifySecret(refreshToken, storedHash, storedSalt);
 
     public async Task<AccessTokenResponse> GetNewToken() {
         var userId = GetUserId();
@@ -111,27 +125,13 @@ public class AuthorizationService(
     public void CreatePassword(string password, string passwordAgain, out string hash, out string salt) {
         if (password != passwordAgain)
             throw new BadRequestException("Lozinke se ne podudaraju!");
-        using var rng = RandomNumberGenerator.Create();
-        var saltBytes = new byte[SaltByteSize];
-        rng.GetBytes(saltBytes);
-        salt = Convert.ToBase64String(saltBytes);
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        hash = Convert.ToBase64String(hashBytes);
+        HashSecret(password, out hash, out salt);
     }
 
     public string CreateResetPasswordCode(out string code, out string salt, out DateTime expiration) {
         code = RandomNumberGenerator.GetInt32(10_000_000, 100_000_000).ToString();
 
-        using var rng = RandomNumberGenerator.Create();
-        var saltBytes = new byte[SaltByteSize];
-        rng.GetBytes(saltBytes);
-        salt = Convert.ToBase64String(saltBytes);
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(code, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        var hashString = Convert.ToBase64String(hashBytes);
+        HashSecret(code, out var hashString, out salt);
         expiration = DateTime.UtcNow.AddMinutes(15);
 
         return hashString;
@@ -141,22 +141,13 @@ public class AuthorizationService(
         if (expiration < DateTime.UtcNow)
             throw new BadRequestException("Reset kod je istekao! Molimo zatražite novi kod.");
 
-        var saltBytes = Convert.FromBase64String(salt);
-        using var pbkdf2 = new Rfc2898DeriveBytes(code, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        var hashString = Convert.ToBase64String(hashBytes);
-        if (hashString != realHash)
+        if (!VerifySecret(code, realHash, salt))
             throw new BadRequestException("Kod nije ispravan!");
     }
 
 
-    public bool VerifyPassword(string password, string storedHash, string storedSalt) {
-        var saltBytes = Convert.FromBase64String(storedSalt);
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, saltBytes, Iterations, _hashAlgorithm);
-        var hashBytes = pbkdf2.GetBytes(HashByteSize);
-        var hash = Convert.ToBase64String(hashBytes);
-        return hash == storedHash;
-    }
+    public bool VerifyPassword(string password, string storedHash, string storedSalt) =>
+        VerifySecret(password, storedHash, storedSalt);
 
     public int GetUserId() {
         return tokenManager.GetUserId();

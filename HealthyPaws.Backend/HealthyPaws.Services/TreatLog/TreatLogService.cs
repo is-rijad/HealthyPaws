@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.TreatLog;
 
-public class TreatLogService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService) : BaseCrudService<Database.Entity.TreatLog, TreatLogInsertRequest, TreatLogInsertRequest, TreatLogResponse, TreatLogSearchObject>(dbContext, mapper, authorizationService), ITreatLogService
+public class TreatLogService(HealthyPawsDbContext db, IMapper map, AuthorizationService auth) : BaseCrudService<Database.Entity.TreatLog, TreatLogInsertRequest, TreatLogInsertRequest, TreatLogResponse, TreatLogSearchObject>(db, map, auth), ITreatLogService
 {
     private static readonly TimeSpan FutureTolerance = TimeSpan.FromMinutes(5);
 

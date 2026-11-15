@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.Treat;
 
-public class TreatService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService) : BaseCrudService<Database.Entity.Treat, TreatInsertRequest, TreatInsertRequest, TreatResponse, TreatSearchObject>(dbContext, mapper, authorizationService), ITreatService
+public class TreatService(HealthyPawsDbContext db, IMapper map, AuthorizationService auth) : BaseCrudService<Database.Entity.Treat, TreatInsertRequest, TreatInsertRequest, TreatResponse, TreatSearchObject>(db, map, auth), ITreatService
 {
     public override async Task<IQueryable<Database.Entity.Treat>> ApplyFilter(IQueryable<Database.Entity.Treat> queryable, TreatSearchObject searchObject)
     {

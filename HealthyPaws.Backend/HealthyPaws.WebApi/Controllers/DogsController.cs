@@ -8,7 +8,7 @@ using HealthyPaws.Services.Dog;
 
 namespace HealthyPaws.WebApi.Controllers;
 
-public class DogsController(IDogService service) : BaseCrudController<DogInsertRequest, DogInsertRequest, DogResponse, DogSearchObject, IDogService>(service)
+public class DogsController(IDogService svc) : BaseCrudController<DogInsertRequest, DogInsertRequest, DogResponse, DogSearchObject, IDogService>(svc)
 {
     [HttpGet]
     public override async Task<IActionResult> Get(DogSearchObject searchObject)

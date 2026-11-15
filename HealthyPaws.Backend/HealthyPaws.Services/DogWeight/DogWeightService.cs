@@ -11,11 +11,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.DogWeight;
 
-public class DogWeightService(HealthyPawsDbContext dbContext, 
-    IMapper mapper, 
-    AuthorizationService authorizationService,
+public class DogWeightService(HealthyPawsDbContext db, 
+    IMapper map, 
+    AuthorizationService auth,
     ICalorieAgentService calorieAgentService)
-    : BaseCrudService<Database.Entity.DogWeight, DogWeightInsertRequest, DogWeightUpdateRequest, DogWeightResponse, DogWeightSearchObject>(dbContext, mapper, authorizationService), IDogWeightService
+    : BaseCrudService<Database.Entity.DogWeight, DogWeightInsertRequest, DogWeightUpdateRequest, DogWeightResponse, DogWeightSearchObject>(db, map, auth), IDogWeightService
 {
     public override async Task<IQueryable<Database.Entity.DogWeight>> ApplyFilter(IQueryable<Database.Entity.DogWeight> queryable, DogWeightSearchObject searchObject)
     {

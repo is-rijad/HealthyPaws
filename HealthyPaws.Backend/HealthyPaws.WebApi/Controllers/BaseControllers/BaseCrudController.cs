@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HealthyPaws.WebApi.Controllers.BaseControllers;
 
-public class BaseCrudController<TInsertRequest, TUpdateRequest, TResponse, TSearchObject, TService>(TService service) : BaseGetController<TResponse, TSearchObject, TService>(service) where TResponse : class where TSearchObject : BaseSearchObject where TInsertRequest : class where TUpdateRequest : class where TService : IBaseCrudService<TInsertRequest, TUpdateRequest, TResponse, TSearchObject> {
+public class BaseCrudController<TInsertRequest, TUpdateRequest, TResponse, TSearchObject, TService>(TService svc) : BaseGetController<TResponse, TSearchObject, TService>(svc) where TResponse : class where TSearchObject : BaseSearchObject where TInsertRequest : class where TUpdateRequest : class where TService : IBaseCrudService<TInsertRequest, TUpdateRequest, TResponse, TSearchObject> {
     public virtual async Task<IActionResult> Insert([FromBody] TInsertRequest request) {
         return Ok(await service.InsertAsync(request));
     }

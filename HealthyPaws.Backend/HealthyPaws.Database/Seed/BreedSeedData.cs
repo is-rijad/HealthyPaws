@@ -219,7 +219,7 @@ public static class BreedSeedData {
         ("Rodezijski ridžbek", "Rhodesian Ridgeback", 31.75m, 38.56m),
         ("Rumunski mioritski ovčar", "Romanian Mioritic Shepherd Dog", 45.36m, 58.97m),
         ("Rotvajler", "Rottweiler", 36.29m, 61.23m),
-        ("Rasel terijer", "Russell Terrier", 4.08m, 6.80m),
+        ("Džek Rasel terijer", "Jack Russell Terrier", 4.08m, 6.80m),
         ("Ruski toy terijer", "Russian Toy", 1.36m, 2.95m),
         ("Ruski cvjetni bolonjez", "Russian Tsvetnaya Bolonka", 2.04m, 4.99m),
         ("Bernardinac", "Saint Bernard", 54.43m, 81.65m),

@@ -10,9 +10,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.User;
 
-public class UserService(HealthyPawsDbContext dbContext,
-    IMapper mapper,
-    AuthorizationService authorizationService) : BaseCrudService<Database.Entity.User, UserInsertRequest, UserUpdateRequest, UserResponse, BaseSearchObject>(dbContext, mapper, authorizationService), IUserService
+public class UserService(HealthyPawsDbContext db,
+    IMapper map,
+    AuthorizationService auth) : BaseCrudService<Database.Entity.User, UserInsertRequest, UserUpdateRequest, UserResponse, BaseSearchObject>(db, map, auth), IUserService
 {
     protected override async Task BeforeInsert(UserInsertRequest request)
     {

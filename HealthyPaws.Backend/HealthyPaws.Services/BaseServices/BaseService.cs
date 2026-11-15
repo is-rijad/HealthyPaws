@@ -13,6 +13,9 @@ public abstract class
     where TEntity : class
     where TSearchObject : BaseSearchObject
 {
+    protected readonly HealthyPawsDbContext dbContext = dbContext;
+    protected readonly IMapper mapper = mapper;
+
 
     public virtual async Task<PagedResult<TResponse>> GetAsync(TSearchObject searchObject) {
         var queryable = dbContext.Set<TEntity>().AsNoTracking();

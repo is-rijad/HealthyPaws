@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace HealthyPaws.WebApi.Controllers.BaseControllers;
 
 public class BaseGetController<TResponse, TSearchObject, TService>(TService service) : BaseController where TResponse : class where TSearchObject : BaseSearchObject where TService : IBaseService<TResponse, TSearchObject> {
+    protected readonly TService service = service;
+
     public virtual async Task<IActionResult> Get([FromQuery] TSearchObject searchObject) {
         return Ok(await service.GetAsync(searchObject));
     }

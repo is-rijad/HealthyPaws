@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.Dog;
 
-public class DogService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService, ICalorieAgentService calorieAgentService) : BaseCrudService<Database.Entity.Dog, DogInsertRequest, DogInsertRequest, DogResponse, DogSearchObject>(dbContext, mapper, authorizationService), IDogService
+public class DogService(HealthyPawsDbContext db, IMapper map, AuthorizationService auth, ICalorieAgentService calorieAgentService) : BaseCrudService<Database.Entity.Dog, DogInsertRequest, DogInsertRequest, DogResponse, DogSearchObject>(db, map, auth), IDogService
 {
     public Task<CalorieBudgetResponse> GetCalorieBudgetAsync(int dogId, DateTime? from, DateTime? to)
         => calorieAgentService.GetCalorieBudgetAsync(dogId, from, to);

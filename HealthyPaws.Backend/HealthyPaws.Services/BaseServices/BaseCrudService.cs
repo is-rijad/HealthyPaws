@@ -9,11 +9,11 @@ namespace HealthyPaws.Services.BaseServices;
 
 public abstract class
     BaseCrudService<TEntity, TInsertRequest, TUpdateRequest, TResponse, TSearchObject>(
-        HealthyPawsDbContext dbContext,
-        IMapper mapper,
+        HealthyPawsDbContext db,
+        IMapper map,
         AuthorizationService authorizationService)
     :
-        BaseService<TResponse, TEntity, TSearchObject>(dbContext, mapper),
+        BaseService<TResponse, TEntity, TSearchObject>(db, map),
         IBaseCrudService<TInsertRequest, TUpdateRequest, TResponse, TSearchObject>
     where TEntity : class
     where TInsertRequest : class
@@ -21,6 +21,8 @@ public abstract class
     where TResponse : class
     where TSearchObject : BaseSearchObject
 {
+    protected readonly AuthorizationService authorizationService = authorizationService;
+
 
     public virtual async Task<TResponse> InsertAsync(TInsertRequest request) {
         await using var transaction = await dbContext.Database.BeginTransactionAsync();

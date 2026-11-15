@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace HealthyPaws.Services.Device;
 
-public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, AuthorizationService authorizationService,
-    ICalorieAgentService calorieAgentService) : BaseCrudService<Database.Entity.Device, DeviceInsertRequest, DeviceUpdateRequest, DeviceResponse, DeviceSearchObject>(dbContext, mapper, authorizationService), IDeviceService
+public class DeviceService(HealthyPawsDbContext db, IMapper map, AuthorizationService auth,
+    ICalorieAgentService calorieAgentService) : BaseCrudService<Database.Entity.Device, DeviceInsertRequest, DeviceUpdateRequest, DeviceResponse, DeviceSearchObject>(db, map, auth), IDeviceService
 {
     public override async Task<DeviceResponse> InsertAsync(DeviceInsertRequest request) {
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
@@ -23,7 +23,7 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
         var dog = existingDevice?.Dog;
         if (request.Dog != null && request.DogWeight != null && request.MealTimes != null)
         {
-            existingDevice = null; // novi pas dobija vlastiti zapis uređaja
+            existingDevice = null;
             dog = mapper.Map<Database.Entity.Dog>(request.Dog);
             await dbContext.Dogs.AddAsync(dog);
             await dbContext.SaveChangesAsync();
@@ -49,7 +49,6 @@ public class DeviceService(HealthyPawsDbContext dbContext, IMapper mapper, Autho
         if (dog is null)
             throw new BadRequestException("Uređaj nije pronađen. Unesite podatke o psu, težini i obrocima!");
 
-        // Pridruživanje postojećem uređaju: dijeli se isti zapis (unique indeks DogId+MacAddress), dodaje se samo veza s korisnikom.
         var device = existingDevice ?? (await dbContext.Devices.AddAsync(new Database.Entity.Device()
         {
             DogId = dog.Id,
